@@ -1,0 +1,153 @@
+<launch>
+  <arg name="simul" default="true"/>
+  <arg name="initial_pose_x" default="0.0"/>
+	<arg name="initial_pose_y" default="0.0"/>
+	<arg name="initial_pose_a" default="0.0"/>
+	<arg name="dynamic_map" default="false"/>
+	<arg name="clean_goal_map" default="false"/>
+	<arg name="clean_unexplored_map" default="false"/>
+	<arg name="look_at_goal" default="false"/>
+	<arg name="avoidance_type_obstacle" default="false"/>
+	<arg name="kinect_minX" default="0.25"/>
+	<arg name="kinect_maxX" default="0.9"/>
+	<arg name="kinect_minY" default="-0.35"/>
+	<arg name="kinect_maxY" default="0.35"/>
+	<arg name="kinect_minZ" default="0.05"/>
+	<arg name="kinect_maxZ" default="1.0"/>
+	<arg name="calculate_diagonal_paths" default="false"/>
+  <arg name="hostname" default="192.168.0.11" />
+  <arg name="tf_prefix" default="no_prefix"/>
+  <arg name="use_tf_prefix" default="false" />
+  
+  <param name="robot_description" textfile="$(find robotino_description)/urdf/robotino.urdf" />
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+  	<param name="publish_frequency" type="double" value="20.0" />
+        <param name="tf_prefix" value="$(arg tf_prefix)" if="$(arg use_tf_prefix)"/>
+  </node>
+  <node pkg="tf" type="static_transform_publisher" name="laser_camera_broadcaster" args="0.0 0 0.0 0 0 0 laser_link camera_depth_frame 50" unless="$(arg use_tf_prefix)" />
+  <node pkg="tf" type="static_transform_publisher" name="laser_camera_broadcaster" args="0.0 0 0.0 0 0 0 $(arg tf_prefix)/laser_link $(arg tf_prefix)/camera_depth_frame 50" if="$(arg use_tf_prefix)" />
+  <node pkg="tf" type="static_transform_publisher" name="base_laser_broadcaster_from_launch_file" args="0.13 0 0.05 0 0 0 base_link laser_link 100" unless="$(arg use_tf_prefix)"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_laser_broadcaster_from_launch_file" args="0.13 0 0.05 0 0 0 $(arg tf_prefix)/base_link $(arg tf_prefix)/laser_link 100" if="$(arg use_tf_prefix)"/>
+
+  <node name="robotino_node" pkg="robotino_base" type="robotino_node" output="screen">
+        <param name="hostname" value="$(arg hostname)" />
+        <param name="max_linear_vel" value="1.0" />
+        <param name="min_linear_vel" value="0.01" />
+        <param name="max_angular_vel" value="1.0" />
+        <param name="min_angular_vel" value="0.01" />
+        <param name="ns_room_id" value="3" />
+        <param name="ns_ceil_height" value="3.0" />
+        <param name="tf_prefix" value="$(arg tf_prefix)" />
+        <remap from="robotino_joint_states" to="joint_states" />
+	<remap from="/cmd_vel" to="/hardware/mobile_base/cmd_vel"/>
+        <!--remap from="image_raw" to="image"/-->
+    </node>
+
+    <node name="robotino_laserrangefinder_node" pkg="robotino_base" type="robotino_laserrangefinder_node" output="screen">
+        <param name="hostname" value="$(arg hostname)" />
+        <param name="laserRangeFinderNumber" value="0" />
+        <param name="tf_prefix" value="$(arg tf_prefix)" />
+	<remap from="/scan" to="/hardware/scan"/>
+    </node>
+
+    <node name="robotino_odometry_node" pkg="robotino_base" type="robotino_odometry_node" output="screen">
+        <param name="hostname" value="$(arg hostname)" />
+        <param name="tf_prefix" value="$(arg tf_prefix)" />
+    </node>
+
+    <group ns="hardware">
+		<node name="right_arm" pkg="arms" type="right_arm_real_simul_node" output="screen" respawn="true">
+			<param name="port" value="/dev/justinaRightArm"/>
+			<param name="baud" value="200000"/>
+			<param name="bulk_enable" value="true"/>
+			<param name="write_sync_enable" value="true"/>
+			<param name="simul" value="true"/>
+		</node>
+		<node name="left_arm" pkg="arms" type="left_arm_real_simul_node" output="screen" respawn="true">
+			<param name="port" value="/dev/justinaLeftArm"/>
+			<param name="baud" value="1000000"/>
+			<param name="bulk_enable" value="true"/>
+			<param name="write_sync_enable" value="true"/>
+			<param name="simul" value="true"/>
+		</node>
+		<node name="head" pkg="head" type="head_node" output="screen">
+			<param name="port" value="/dev/justinaHead"/>
+			<param name="baud" value="1000000"/>
+			<param name="bulk_enable" value="true"/>
+			<param name="write_sync_enable" value="true"/>
+			<param name="read_simul" value="false"/>
+			<param name="simul" value="true"/>
+		</node>
+		<node name="torso" pkg="torso" type="torso_real_simul.py" output="screen">
+			<param name="simul" value="true"/>
+			<param name="port" value="/dev/justinaTorso"/>
+		</node>
+		<node name="joy" pkg="joy" type="joy_node" output="screen"/>
+		<node name="init_arms" pkg="arms" type="initializing_arms_node.py" output="screen"/>
+	</group>
+
+   <group ns="hri">
+                <node name="rviz" pkg="rviz" type="rviz" args="-d $(find knowledge)/hri/rviz_config.rviz"/>
+                <!-- node name="justina_gui" pkg="justina_gui" type="justina_gui_node" output="screen"
+                        args="-p $(find knowledge)/navigation/"/ -->
+                <node name="jrviz" pkg="jrviz" type="jrviz_node" args="-d $(find knowledge)/hri/rviz_config.rviz -p $(find knowledge)/navigation/ -dv $(find knowledge)/hri/rviz_config_nav.rviz" output="screen"/>
+		<node name="leg_finder" pkg="leg_finder" type="leg_finder_node" args="--hyp" output="screen"/>
+		<node name="human_follower" pkg="human_follower" type="human_follower_node" args="--move_head" output="screen"/>
+	</group>
+	<node name="bbros_bridge" pkg="bbros_bridge" type="bbros_bridge_all.py" args="-f $(find bbros_bridge)/src/files/topics_inclusion_list.json"/>
+	<group ns="interoperation">
+		<node name="joystick_teleop" pkg="joystick_teleop" type="joystick_teleop_node.py" output="screen" />
+	</group>
+	<group ns="manipulation">
+		<node name="ik_geometric" pkg="ik_geometric" type="ik_geometric_node" output="screen"/>
+		<node name="manip_pln" pkg="manip_pln" type="manip_pln_node" output="screen" args="-f $(find knowledge)/manipulation/predef_poses/"/>
+	</group>
+
+	<include file="$(find surge_et_ambula)/launch/justina_navigation.launch">
+		<arg name="initial_pose_x" value="$(arg initial_pose_x)"/>
+		<arg name="initial_pose_y" value="$(arg initial_pose_y)"/>
+		<arg name="initial_pose_a" value="$(arg initial_pose_a)"/>
+		<arg name="dynamic_map" value="$(arg dynamic_map)"/>
+		<arg name="clean_goal_map" value="$(arg clean_goal_map)"/>
+		<arg name="clean_unexplored_map" value="$(arg clean_unexplored_map)"/>
+		<arg name="look_at_goal" value="$(arg look_at_goal)"/>
+		<arg name="avoidance_type_obstacle" value="$(arg avoidance_type_obstacle)"/>
+		<arg name="kinect_minX" value="$(arg kinect_minX)"/>
+		<arg name="kinect_maxX" value="$(arg kinect_maxX)"/>
+		<arg name="kinect_minY" value="$(arg kinect_minY)"/>
+		<arg name="kinect_maxY" value="$(arg kinect_maxY)"/>
+		<arg name="kinect_minZ" value="$(arg kinect_minZ)"/>
+		<arg name="kinect_maxZ" value="$(arg kinect_maxZ)"/>
+		<arg name="calculate_diagonal_paths" value="$(arg calculate_diagonal_paths)"/>
+	</include>
+
+	<group ns="vision">
+		<node name="face_recog" pkg="face_recog" type="face_recog_node" output="screen"/>
+		<node name="obj_reco" pkg="obj_reco" type="obj_reco_node" output="screen" args="--db $(find obj_reco)/TrainingDir/"/>
+		<node name="hand_detect_in_BB" pkg="hand_recog" type="hand_detect_in_BB_node" output="screen"/>
+		<node name="cube_segmentation" pkg="cubes_segmentation" type="cubes_segmentation_node" output="screen"/>
+		<!-- This is for load the open pose node  -->
+		<!-- node name="openpose_node" pkg="openpose" type="open_pose_node" output="screen">
+			<param name="debug_mode" value="false"/>
+			<param name="file_links_config" value="$(find openpose)/OpenPoseConfig.xml"/>
+			<param name="model_folder" value="$(env OPENPOSE_HOME)/models/"/ -->
+			<!-- This Value is to the old openpose version 1.2 -->
+			<!-- param name="net_resolution" value="480x320"/ -->
+			<!-- param name="net_resolution" value="256x192"/>
+			<param name="model_pose" value="BODY_25"/>
+			<remap from="/vision/openpose/enable_estimate_pose" to="/vision/skeleton_finder/enable_tracking"/>
+		</node -->
+		<node name="gesture_recog_skeleton" pkg="gesture_recog_skeleton" type="gesture_recog_node" output="screen">
+			<param name="gesture_method" value="1"/>
+			<!-- This params are to waving detect -->
+			<param name="num_frames" value="10"/>
+			<param name="thr_waving_motion" value="0.3"/>
+			<param name="thr_to_person" value="0.3"/>
+			<param name="time_elapsed_remove" value="10.0"/>
+		</node>
+	</group>
+	<include file="$(find surge_et_ambula)/launch/justina_knowledge.launch"/>
+	<!-- This is for the roah IROS refere -->
+	<!-- include file="$(find roah_rsbb_comm_ros)/launch/test.launch"/>
+	<node name="monitor" pkg="act_pln" type="monitor" output="screen"/-->
+</launch>
