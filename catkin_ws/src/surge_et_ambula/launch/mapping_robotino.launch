@@ -1,5 +1,4 @@
-<launch>
-	<param name="robot_description" command="cat $(find knowledge)/hardware/justina_old.xml" />
+<launch>	
 	
 	<arg name="simul" default="false"/>
 	<arg name="simul_pcl" default="false"/>
@@ -8,6 +7,7 @@
   <arg name="use_tf_prefix" default="false" />
   
   <param name="robot_description" textfile="$(find robotino_description)/urdf/robotino.urdf" />
+ 
   <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
   	<param name="publish_frequency" type="double" value="20.0" />
         <param name="tf_prefix" value="$(arg tf_prefix)" if="$(arg use_tf_prefix)"/>
@@ -51,7 +51,7 @@
 
 
 
-		<node name="joy" pkg="joy" type="joy_node" output="screen"/>
+		#<node name="joy" pkg="joy" type="joy_node" output="screen"/>
 
 	</group>
 <group ns="hri">
@@ -64,7 +64,7 @@
 	</group>
 
 	<group ns="interoperation">
-		<node name="joystick_teleop" pkg="joystick_teleop" type="joystick_teleop_node.py" output="screen" />
+		<node name="joystick_teleop" pkg="joystick_teleop" type="joystick_logitech.py" output="screen" />
 	</group>
 	<node name="gmapping" pkg="gmapping" type="slam_gmapping" args="scan:=/hardware/scan" output="screen">
 		<param name="map_update_interval" value="1.0" />
