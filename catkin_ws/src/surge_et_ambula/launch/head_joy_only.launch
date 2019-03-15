@@ -8,7 +8,7 @@
     </group>
       
     <group ns="interoperation">
-	     <node name="joystick_teleop" pkg="joystick_teleop" type="joystick_teleop_node.py" output="screen" />
+	     <node name="joystick_teleop" pkg="joystick_teleop" type="joystick_logitech.py" output="screen" />
 	</group>
     
 </launch>

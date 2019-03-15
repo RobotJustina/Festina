@@ -1,0 +1,61 @@
+<launch>
+  <!--arg name="simul" default="true"/-->
+  <arg name="initial_pose_x" default="0.0"/>
+	<arg name="initial_pose_y" default="0.0"/>
+	<arg name="initial_pose_a" default="0.0"/>
+	<arg name="dynamic_map" default="false"/>
+	<arg name="clean_goal_map" default="false"/>
+	<arg name="clean_unexplored_map" default="false"/>
+	<arg name="look_at_goal" default="false"/>
+	<arg name="avoidance_type_obstacle" default="false"/>
+	<arg name="kinect_minX" default="0.25"/>
+	<arg name="kinect_maxX" default="0.9"/>
+	<arg name="kinect_minY" default="-0.35"/>
+	<arg name="kinect_maxY" default="0.35"/>
+	<arg name="kinect_minZ" default="0.05"/>
+	<arg name="kinect_maxZ" default="1.0"/>
+	<arg name="calculate_diagonal_paths" default="false"/>
+
+
+  <arg name="hostname" default="192.168.0.11" />
+  <arg name="tf_prefix" default="no_prefix"/>
+  <arg name="use_tf_prefix" default="false" />
+  
+  <param name="robot_description" textfile="$(find robotino_description)/urdf/robotino.urdf" />
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+  	<param name="publish_frequency" type="double" value="20.0" />
+        <param name="tf_prefix" value="$(arg tf_prefix)" if="$(arg use_tf_prefix)"/>
+  </node>
+  <node pkg="tf" type="static_transform_publisher" name="laser_camera_broadcaster" args="0.0 0 0.0 0 0 0 laser_link camera_depth_frame 50" unless="$(arg use_tf_prefix)" />
+  
+  <node pkg="tf" type="static_transform_publisher" name="laser_camera_broadcaster" args="0.0 0 0.0 0 0 0 $(arg tf_prefix)/laser_link $(arg tf_prefix)/camera_depth_frame 50" if="$(arg use_tf_prefix)" />
+  
+  <node pkg="tf" type="static_transform_publisher" name="base_laser_broadcaster_from_launch_file" args="0.13 0 0.05 0 0 0 base_link laser_link 100" unless="$(arg use_tf_prefix)"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_laser_broadcaster_from_launch_file" args="0.13 0 0.05 0 0 0 $(arg tf_prefix)/base_link $(arg tf_prefix)/laser_link 100" if="$(arg use_tf_prefix)"/>
+
+  <node name="robotino_node" pkg="robotino_base" type="robotino_node" output="screen">
+        <param name="hostname" value="$(arg hostname)" />
+        <param name="max_linear_vel" value="1.0" />
+        <param name="min_linear_vel" value="0.01" />
+        <param name="max_angular_vel" value="1.0" />
+        <param name="min_angular_vel" value="0.01" />
+        <param name="ns_room_id" value="3" />
+        <param name="ns_ceil_height" value="3.0" />
+        <param name="tf_prefix" value="$(arg tf_prefix)" />
+        <remap from="robotino_joint_states" to="joint_states" />
+	<remap from="/cmd_vel" to="/hardware/mobile_base/cmd_vel"/>
+        <!--remap from="image_raw" to="image"/-->
+    </node>
+
+    <!--node name="robotino_laserrangefinder_node" pkg="robotino_base" type="robotino_laserrangefinder_node" output="screen">
+        <param name="hostname" value="$(arg hostname)" />
+        <param name="laserRangeFinderNumber" value="0" />
+        <param name="tf_prefix" value="$(arg tf_prefix)" />
+	<remap from="/scan" to="/hardware/scan"/>
+    </node-->
+
+    <node name="robotino_odometry_node" pkg="robotino_base" type="robotino_odometry_node" output="screen">
+        <param name="hostname" value="$(arg hostname)" />
+        <param name="tf_prefix" value="$(arg tf_prefix)" />
+    </node>
+</launch>

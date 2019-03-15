@@ -13,14 +13,14 @@ bool simul = false;
 
 int goalPos[2] = {0, 0};
 int goalSpeeds[2] = {90, 75};
-int PID[2][3] = {{24, 0, 128}, {128, 0, 64}};
+int PID[2][3] = {{24, 0, 128}, {64, 0, 128}};
 int minLimits[2] = {1023, 0};
 int maxLimits[2] = {3069, 4095};
 
 float goalPos_simul[2] = {0.0, 0.0};
 float goalSpeeds_simul[2] = {0.3, 0.3};
 
-int zero_head[2] = {2040, 2520};
+int zero_head[2] = {2040, 2770};
 //float offset = -0.07671; // This for help me carry
 float offset = -0.04; // This is for p and g 
 float offsetReadSimul = -0.04;
