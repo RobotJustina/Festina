@@ -36,7 +36,7 @@ bool trainFace(std::string t_faceID, int t_timeout, int t_frames)
 
 	do{
 		boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-		JustinaVision::facTrain(t_faceID, t_frames);
+		JustinaVision::faceTrain(t_faceID, t_frames);
 		
 		curr = boost::posix_time::second_clock::local_time();
 		ros::spinOnce();
@@ -72,7 +72,7 @@ bool recognizePerTrain(float timeOut, std::string id)
 		std::vector<vision_msgs::VisionFaceObject> lastRecognizedFaces;
 		do{
 			boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-			JustinaVision::facRecognize(id);
+			JustinaVision::faceRecognize(id);
 			curr = boost::posix_time::second_clock::local_time();
 			ros::spinOnce();
 		}while(ros::ok() && (curr - prev).total_milliseconds() < timeOut);

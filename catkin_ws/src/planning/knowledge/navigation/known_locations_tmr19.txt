@@ -1,0 +1,19 @@
+bed_room	-1	2
+center_table	-1.3	2.6
+dining_room	-3.5	1
+dining_table	-3.5	1.5
+doorOne	-0.25	-2.6
+doorTwo	-3.1	3.5
+fridge	1	0.7
+hall	-2	1
+hallOne	-1.5	-0.2
+hallTwo	-2.5	2.2
+init	0.0127655	-0.00185759	0.000171207
+kitchen	0.5	-0
+kitchen_table	0	-0.6
+living_room	-3	-2
+living_roomOne	-3.5	-0.5
+night_stand	-1	3.8
+shelf	-4.5	0.5
+side_table	-3.5	-1.5
+tv_table	-3.2	-2.2

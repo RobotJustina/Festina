@@ -1,0 +1,7 @@
+image: /home/pumas/maps/mapOne.pgm
+resolution: 0.050000
+origin: [-42.500000, -35.500000, 0.000000]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196
+

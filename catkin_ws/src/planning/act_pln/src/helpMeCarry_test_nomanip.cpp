@@ -153,15 +153,15 @@ int main(int argc, char** argv)
     //places
     validCommandsTake.push_back("take this bag to the bedroom");
     validCommandsTake.push_back("get this bag to the bedroom");
-    location="bed_room";
+    location="bedroom";
     
     validCommandsTake.push_back("take this bag to the bed");
     validCommandsTake.push_back("get this bag to the bed");
     location="bed";
 
-    validCommandsTake.push_back("take this bag to the center table");
-    validCommandsTake.push_back("get this bag to the center table");
-    location="center_table";
+    validCommandsTake.push_back("take this bag to the desk");
+    validCommandsTake.push_back("get this bag to the desk");
+    location="desk";
 
     validCommandsTake.push_back("take this bag to the side table");
     validCommandsTake.push_back("get this bag to the side table");
@@ -171,17 +171,17 @@ int main(int argc, char** argv)
     validCommandsTake.push_back("get this bag to the living room");
     location="living_room";
 
-    validCommandsTake.push_back("take this bag to the night stand");
-    validCommandsTake.push_back("get this bag to the night stand");
-    location="night_stand";
+    validCommandsTake.push_back("take this bag to the couch");
+    validCommandsTake.push_back("get this bag to the couch");
+    location="couch";
 
-    validCommandsTake.push_back("take this bag to the tv table");
-    validCommandsTake.push_back("get this bag to the tv table");
-    location="tv_table";
+    validCommandsTake.push_back("take this bag to the end table");
+    validCommandsTake.push_back("get this bag to the end table");
+    location="end_table";
     
-    validCommandsTake.push_back("take this bag to the shelf");
-    validCommandsTake.push_back("get this bag to the shelf");
-    location="shelf";
+    validCommandsTake.push_back("take this bag to the bookcase");
+    validCommandsTake.push_back("get this bag to the bookcase");
+    location="bookcase";
 
     validCommandsTake.push_back("take this bag to the dining room");
     validCommandsTake.push_back("get this bag to the dining room");
@@ -195,17 +195,33 @@ int main(int argc, char** argv)
     validCommandsTake.push_back("get this bag to the kitchen");
     location="kitchen";
 
-    validCommandsTake.push_back("take this bag to the fridge");
-    validCommandsTake.push_back("get this bag to the fridge");
-    location="fridge";
+    validCommandsTake.push_back("take this bag to the sink");
+    validCommandsTake.push_back("get this bag to the sink");
+    location="sink";
 
-    validCommandsTake.push_back("take this bag to the kitchen table");
-    validCommandsTake.push_back("get this bag to the kitchen table");
-    location="kitchen_table";
+    validCommandsTake.push_back("take this bag to the dishwasher");
+    validCommandsTake.push_back("get this bag to the dishwasher");
+    location="dishwasher";
+
+    validCommandsTake.push_back("take this bag to the counter");
+    validCommandsTake.push_back("get this bag to the counter");
+    location="counter";
+
+    validCommandsTake.push_back("take this bag to the storage table");
+    validCommandsTake.push_back("get this bag to the storage table");
+    location="storage_table";
+
+    validCommandsTake.push_back("take this bag to the cupboard");
+    validCommandsTake.push_back("get this bag to the cupboard");
+    location="cupboard";
+
+    validCommandsTake.push_back("take this bag to the entrance");
+    validCommandsTake.push_back("get this bag to the entrance");
+    location="entrance";
     
-    validCommandsTake.push_back("take this bag to the hall");
-    validCommandsTake.push_back("get this bag to the hall");
-    location="hall";
+    validCommandsTake.push_back("take this bag to the corridor");
+    validCommandsTake.push_back("get this bag to the corridor");
+    location="corridor";
 
     ros::Subscriber laser_subscriber;
     //laser_subscriber = n.subscribe<sensor_msgs::LaserScan>("/scan", 1, Callback_laser);  
@@ -233,9 +249,9 @@ int main(int argc, char** argv)
         {  
 
             case SM_INIT:
-                std::cout << "State machine: SM_INIT" << std::endl; 
+                std::cout << "State machine: SM_INIT" << std::endl;	
                 JustinaManip::startHdGoTo(0.0, 0.0);
-                JustinaHRI::waitAfterSay("lets start", 1000, minDelayAfterSay);
+                JustinaHRI::waitAfterSay("I am ready for the help me carry test", 2000, minDelayAfterSay);
                 JustinaHRI::loadGrammarSpeechRecognized("HelpMeCarry.xml");//load the grammar
                 JustinaHRI::enableSpeechRecognized(false);//disable recognized speech
                 JustinaTools::pdfAppend("HelpMeCarry_Plans", "Starting the Help me Carry Test");
@@ -244,8 +260,7 @@ int main(int argc, char** argv)
 
             case SM_INSTRUCTIONS:
                 std::cout << "State machine: SM_INSTRUCTIONS" << std::endl;
-                JustinaHRI::waitAfterSay("Please tell me:  come with me  to start follow you", 500, maxDelayAfterSay);
-                
+                JustinaHRI::waitAfterSay("Please tell me  come with me  and take me to the car, when we reach tell me here is the car. ", 1000);
                 JustinaHRI::enableSpeechRecognized(true);//enable recognized speech
                 cont_z=0;
                 nextState=SM_WAIT_FOR_OPERATOR;
@@ -258,11 +273,11 @@ int main(int argc, char** argv)
                     JustinaTools::pdfAppend("HelpMeCarry_Plans", "Follow me command was recognized");
                 }
                 else                    
-                    cont_z++;           
+                    cont_z++;    		
 
                 if(cont_z>3){
                     JustinaHRI::enableSpeechRecognized(false);//disable recognized speech
-                    JustinaHRI::waitAfterSay("Sorry I did not understand you, please repeat that", 500, maxDelayAfterSay);
+                    JustinaHRI::waitAfterSay("Sorry I did not understand you, please repeat that", 5000, maxDelayAfterSay);
                     JustinaHRI::enableSpeechRecognized(true);//enable recognized speech
                     cont_z=0;
                 }
@@ -272,7 +287,7 @@ int main(int argc, char** argv)
                 std::cout << "State machine: SM_MEMORIZING_OPERATOR" << std::endl;
                 if(!follow_start){
                     JustinaHRI::enableSpeechRecognized(false);//disable recognized speech
-                    JustinaHRI::waitAfterSay(" Please stand in front of me.", 500, minDelayAfterSay);
+                    JustinaHRI::waitAfterSay(" Please stand in front of me.", 3000, minDelayAfterSay);
                     JustinaTools::pdfAppend("HelpMeCarry_Plans", "Starting the search of human");
                     JustinaHRI::enableLegFinder(true);
                 }
@@ -288,9 +303,7 @@ int main(int argc, char** argv)
                     if(follow_start){
                         std::cout << "NavigTest.->Frontal legs found!" << std::endl;
                         JustinaHRI::enableSpeechRecognized(false);//disable recognized speech
-                        JustinaHRI::waitAfterSay("There you are. I am ready to follow you, please take me to the car", 500, minDelayAfterSay);
-                        JustinaHRI::waitAfterSay(" ", 50);
-                        JustinaHRI::waitAfterSay(" When we Arrive tell me:  here is the car", 500, maxDelayAfterSay);
+                        JustinaHRI::waitAfterSay("There you are, I am ready to follow you,please take me to the car", 4000, maxDelayAfterSay);
                         JustinaHRI::enableSpeechRecognized(true);//enable recognized speech
                         JustinaTools::pdfAppend("HelpMeCarry_Plans", "Human was found with Hokuyo Laser");
                         JustinaHRI::startFollowHuman();
@@ -302,9 +315,7 @@ int main(int argc, char** argv)
                     else{
                         std::cout << "NavigTest.->Frontal legs found!" << std::endl;
                         JustinaHRI::enableSpeechRecognized(false);//disable recognized speech
-                        JustinaHRI::waitAfterSay("There you are, take me to the car", 500, minDelayAfterSay);
-                        JustinaHRI::waitAfterSay(" ", 50);
-                JustinaHRI::waitAfterSay(" When we Arrive tell me:  here is the car", 500, minDelayAfterSay);
+                        JustinaHRI::waitAfterSay("There you are, take me to the car", 1000, maxDelayAfterSay);
                         JustinaHRI::enableSpeechRecognized(true);//disable recognized speech
                         JustinaTools::pdfAppend("HelpMeCarry_Plans", "Human was found with Hokuyo Laser");
                         JustinaHRI::startFollowHuman();
@@ -321,13 +332,13 @@ int main(int argc, char** argv)
                         JustinaTools::pdfAppend("HelpMeCarry_Plans", "Here is the car command was recognized");
                         JustinaTools::pdfAppend("HelpMeCarry_Plans", "Waiting for user confirmation");
                         JustinaHRI::enableSpeechRecognized(false);//disable recognized speech
-                        JustinaHRI::waitAfterSay("is it the car location, please tell me  robot yes, or robot  no", 500, maxDelayAfterSay);
+                        JustinaHRI::waitAfterSay("is it the car location, please tell me robot yes, or robot no", 10000, maxDelayAfterSay);
                         JustinaHRI::enableSpeechRecognized(true);//enable recognized speech
                         JustinaHRI::waitForUserConfirmation(userConfirmation, 5000);
                         if(userConfirmation){
                             JustinaHRI::stopFollowHuman();
                             JustinaHRI::enableLegFinder(false);
-                            JustinaKnowledge::addUpdateKnownLoc("car_location");    
+                            JustinaKnowledge::addUpdateKnownLoc("car_location");	
                             JustinaHRI::enableSpeechRecognized(false);//disable recognized speech
                             JustinaHRI::waitAfterSay("I stopped", 2000, minDelayAfterSay);
                             JustinaHRI::enableSpeechRecognized(true);//enable recognized speech
@@ -339,7 +350,7 @@ int main(int argc, char** argv)
                         }
                         else{
                             JustinaHRI::enableSpeechRecognized(false);//disable recognized speech
-                            JustinaHRI::waitAfterSay("Ok, continue", 3000, maxDelayAfterSay);
+                            JustinaHRI::waitAfterSay("Ok, please walk", 3000, maxDelayAfterSay);
                             JustinaHRI::enableSpeechRecognized(true);//enable recognized speech
                             JustinaTools::pdfAppend("HelpMeCarry_Plans", "Robot No command was recognized");
                         }
@@ -348,7 +359,7 @@ int main(int argc, char** argv)
                 if(!JustinaHRI::frontalLegsFound()){
                     std::cout << "State machine: SM_FOLLOWING_PHASE -> Lost human!" << std::endl;
                     JustinaHRI::enableSpeechRecognized(false);//disable recognized speech
-                    JustinaHRI::waitAfterSay("Please put in front of me again", 2000, maxDelayAfterSay);
+                    JustinaHRI::waitAfterSay("I lost you, please put in front of me again", 5500, maxDelayAfterSay);
                     JustinaHRI::enableSpeechRecognized(true);//enable recognized speech
                     JustinaTools::pdfAppend("HelpMeCarry_Plans", "Human Lost");
                     JustinaTools::pdfAppend("HelpMeCarry_Plans", "Starting the search of human");
@@ -362,7 +373,7 @@ int main(int argc, char** argv)
                 std::cout << "State machine: SM_BRING_GROCERIES" << std::endl; 
                 if(cont_z > 3){
                     JustinaHRI::enableSpeechRecognized(false);//disable recognized speech
-                    JustinaHRI::waitAfterSay("Where should I take this ? please tell me: take this bag to some location ", 500, minDelayAfterSay);
+                    JustinaHRI::waitAfterSay("I am ready to take this to some location", 7000, maxDelayAfterSay);
                     JustinaHRI::enableSpeechRecognized(true);//enable recognized speech
                     JustinaTools::pdfAppend("HelpMeCarry_Plans", "Waiting for command to carry the bag");
                     cont_z=0;
@@ -372,7 +383,7 @@ int main(int argc, char** argv)
                     attemptsRecogLoc++;
  
                     if(lastRecoSpeech.find("this bag to the bedroom") != std::string::npos){
-                        location="bed_room";
+                        location="bedroom";
                         alig_to_place=false;
                         nextState=SM_BRING_GROCERIES_CONF;
                     }
@@ -383,8 +394,8 @@ int main(int argc, char** argv)
                         nextState=SM_BRING_GROCERIES_CONF;
                     }
 
-                    else if(lastRecoSpeech.find("this bag to the center table") != std::string::npos){
-                        location="center_table";
+                    else if(lastRecoSpeech.find("this bag to the desk") != std::string::npos){
+                        location="desk";
                         alig_to_place=true;
                         nextState=SM_BRING_GROCERIES_CONF;
                     }
@@ -401,20 +412,20 @@ int main(int argc, char** argv)
                         nextState=SM_BRING_GROCERIES_CONF;
                     }
 
-                    else if(lastRecoSpeech.find("this bag to the night stand") != std::string::npos){
-                        location="night_stand";
+                    else if(lastRecoSpeech.find("this bag to the end table") != std::string::npos){
+                        location="end_table";
                         alig_to_place=false;
                         nextState=SM_BRING_GROCERIES_CONF;
                     }
 
-                    else if(lastRecoSpeech.find("this bag to the tv table") != std::string::npos){
-                        location="tv_table";
+                    else if(lastRecoSpeech.find("this bag to the bookcase") != std::string::npos){
+                        location="bookcase";
                         alig_to_place=false;
                         nextState=SM_BRING_GROCERIES_CONF;
                     }
                     
-                    else if(lastRecoSpeech.find("this bag to the shelf") != std::string::npos){
-                        location="shelf";
+                    else if(lastRecoSpeech.find("this bag to the couch") != std::string::npos){
+                        location="couch";
                         alig_to_place=false;
                         nextState=SM_BRING_GROCERIES_CONF;
                     }
@@ -438,25 +449,53 @@ int main(int argc, char** argv)
                     }
 
 
-                    else if(lastRecoSpeech.find("this bag to the fridge") != std::string::npos){
-                        location="fridge";
+                    else if(lastRecoSpeech.find("this bag to the sink") != std::string::npos){
+                        location="sink";
                         alig_to_place=true;
                         nextState=SM_BRING_GROCERIES_CONF;
                     }
  
-                    else if(lastRecoSpeech.find("this bag to the kitchen table") != std::string::npos){
-                        location="kitchen_table";
+                    else if(lastRecoSpeech.find("this bag to the dishwasher") != std::string::npos){
+                        location="dishwasher";
                         alig_to_place=true;
                         nextState=SM_BRING_GROCERIES_CONF;
                     }
  
-                    else if(lastRecoSpeech.find("this bag to the hall") != std::string::npos){
-                        location="hall";
+                    else if(lastRecoSpeech.find("this bag to the counter") != std::string::npos){
+                        location="counter";
                         alig_to_place=true;
                         nextState=SM_BRING_GROCERIES_CONF;
                     }
                     
+                    else if(lastRecoSpeech.find("this bag to the storage table") != std::string::npos){
+                        location="storage_table";
+                        alig_to_place=false;
+                        nextState=SM_BRING_GROCERIES_CONF;
+                    }
                     
+                    else if(lastRecoSpeech.find("this bag to the cupboard") != std::string::npos){
+                        location="cupboard";
+                        alig_to_place=false;
+                        nextState=SM_BRING_GROCERIES_CONF;
+                    }
+                    
+                    else if(lastRecoSpeech.find("this bag to the entrance") != std::string::npos){
+                        location="entrance";
+                        alig_to_place=false;
+                        nextState=SM_BRING_GROCERIES_CONF;
+                    }
+                    
+                    else if(lastRecoSpeech.find("this bag to the corridor") != std::string::npos){
+                        location="corridor";
+                        alig_to_place=false;
+                        nextState=SM_BRING_GROCERIES_CONF;
+                    }
+
+                    else if(attemptsRecogLoc >= MAX_ATTEMPTS_RECOG){
+                        location = "counter";
+                        alig_to_place=true;
+                        nextState = SM_BRING_GROCERIES_TAKE;
+                    } 
                     if(location.compare("") != 0 && nextState == SM_BRING_GROCERIES_CONF){
                         ss.str("");
                         ss << "Do you want me take this bag to the "; 
@@ -464,8 +503,14 @@ int main(int argc, char** argv)
                         boost::algorithm::split(tokens, location, boost::algorithm::is_any_of("_"));
                         for(int i = 0; i < tokens.size(); i++)
                             ss << tokens[i] << " ";
+
                         JustinaHRI::enableSpeechRecognized(false);//disable recognized speech
-                        JustinaHRI::waitAfterSay(ss.str(), 5000, maxDelayAfterSay);
+                        
+                        
+
+                        JustinaHRI::waitAfterSay(ss.str(), 500, maxDelayAfterSay);
+                        JustinaHRI::waitAfterSay("Tell me: yes or no", 500, maxDelayAfterSay);
+                        
                         JustinaHRI::enableSpeechRecognized(true);//disable recognized speech
                     }
 
@@ -509,7 +554,7 @@ int main(int argc, char** argv)
                 
                 if(!JustinaKnowledge::existKnownLocation(location)){
                     std::cout << "SM_BAG_DELIVERY: NO LOCATION!" << std::endl;
-                    location="bed_room";//*************************************************************
+                    location="counter";//*************************************************************
                     alig_to_place=true;
                     JustinaTools::pdfAppend("HelpMeCarry_Plans", "Location not found: "+ location);
                     JustinaTools::pdfAppend("HelpMeCarry_Plans", "Change location to default location: counter ");
@@ -534,7 +579,7 @@ int main(int argc, char** argv)
             case SM_LOOKING_HELP:
                 std::cout << "State machine: SM_LOOKING_HELP" << std::endl;
                 
-                JustinaHRI::waitAfterSay("I will look for help", 2000);
+                JustinaHRI::waitAfterSay("I will look for help", 3000);
                 JustinaTools::pdfAppend("HelpMeCarry_Plans", "Searching a human for help to the carry the bags");
                 if(JustinaTasks::findPerson("", -1, JustinaTasks::STANDING, false, location)){
                     nextState=SM_GUIDING_ASK;
@@ -549,7 +594,7 @@ int main(int argc, char** argv)
 
             case SM_GUIDING_ASK:
                 std::cout << "State machine: SM_GUIDING_ASK" << std::endl;
-                JustinaHRI::waitAfterSay("Hey there can you please help me , please tell me robot yes, or robot no", 500, minDelayAfterSay);
+                JustinaHRI::waitAfterSay("Hey there can you please help me , please Tell me: yes or no", 1000, maxDelayAfterSay);
                 JustinaHRI::enableSpeechRecognized(true);//enable recognized speech
                 JustinaTools::pdfAppend("HelpMeCarry_Plans", "Waiting for human confirmation");
                 boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
@@ -562,7 +607,7 @@ int main(int argc, char** argv)
                     nextState = SM_LOOKING_HELP;
                     JustinaNavigation::moveDistAngle(0.0, 1.5708, 2000);
                     JustinaTools::pdfAppend("HelpMeCarry_Plans", "Robot no command was recognized");
-                }       
+                }	    
 
                 break;        
 
@@ -591,7 +636,7 @@ int main(int argc, char** argv)
                         JustinaNavigation::getClose(location, 200000);
                 JustinaHRI::waitAfterSay("Here I am", 2000);
                 JustinaTools::pdfAppend("HelpMeCarry_Plans", "Arrived to location: "+ location);
-                
+
                 nextState = SM_FINAL_STATE;
 
                 break;   
@@ -601,6 +646,7 @@ int main(int argc, char** argv)
                 JustinaTools::pdfStop("HelpMeCarry_Plans");
                 success = true;
                 break;
+
         }
 
         ros::spinOnce();

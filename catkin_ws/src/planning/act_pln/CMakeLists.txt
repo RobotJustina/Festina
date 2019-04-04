@@ -273,6 +273,10 @@ add_executable(final_cubes_challange
 	src/final_cubes_challange.cpp
 )
 
+add_executable(receptionist
+  src/receptionist.cpp
+)
+
 #add_executable(visit_my_home_test
 #	src/visit_my_home_test.cpp
 #)
@@ -325,6 +329,7 @@ add_dependencies(final_cubes_challange ${${PROJECT_NAME}_EXPORTED_TARGETS} ${cat
 #add_dependencies(welcoming_visitor_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(catering_comfort_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(getting_to_know_my_home ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(receptionist ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 #target_link_libraries(act_pln_node
@@ -343,6 +348,10 @@ target_link_libraries(follow_me_test
 )
 
 target_link_libraries(helpMeCarry_test
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(receptionist
   ${catkin_LIBRARIES}
 )
 
