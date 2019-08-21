@@ -706,7 +706,7 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
         f21 --;
     }
 
-    std::cout << "Final Cell->" << ruta1[ver] << std::endl;
+    //std::cout << "Final Cell->" << ruta1[ver] << std::endl;
 
     
     int v1 = ruta1[0];
@@ -725,13 +725,23 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
         {
             r++;
             final[r];
-            for(int ve=NumVer; ve<NumVer+1; ve++)
+            for(int ve=NumVer; ve<f1+f2+1; ve++)
             {
                 r++;
                 final[r] = ruta1[ve];
             }
-            v1 = ruta1[ver];
-            ver = ver 
+            v1 = ruta1[NumVer];
+            NumVer = f1+f2;
+            v2 = ruta1[NumVer];
+
+        }
+        else
+        {
+            if((f1+f2-NumVer) > 10 )
+                NumVer = int(NumVer/2);
+            else
+                NumVer --;
+            v2 = ruta1[NumVer];
         }
  
 
