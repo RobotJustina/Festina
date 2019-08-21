@@ -27,11 +27,11 @@ QGroupBox::title {
 }
 
 QRadioButton{
-	spacing: 1px;
+  spacing: 1px;
 }
 QRadioButton::indicator{
-	width: 16px;
-	height: 16px;
+  width: 16px;
+  height: 16px;
 }</string>
   </property>
   <widget class="QWidget" name="centralWidget">

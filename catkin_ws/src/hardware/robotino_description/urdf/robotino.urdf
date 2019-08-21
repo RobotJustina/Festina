@@ -199,7 +199,7 @@
     <parent link="head_link1"/>
     <child link="head_link2"/>
     <axis xyz="0 0 1" />
-    <limit upper="0" lower="0" effort="0" velocity="0" />
+    <limit upper="0" lower="0" effort="0" velocity="5" />
   </joint>
 
   <link name="kinect_link">

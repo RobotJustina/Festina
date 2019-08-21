@@ -181,6 +181,10 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
     //HAY UN MEGABUG EN ESTE ALGORITMO PORQUE NO ESTOY TOMANDO EN CUENTA QUE EN LOS BORDES DEL
     //MAPA NO SE PUEDE APLICAR CONECTIVIDAD CUATRO NI OCHO. FALTA RESTRINGIR EL RECORRIDO A LOS BORDES MENOS UNO.
     //POR AHORA FUNCIONA XQ CONFÍO EN QUE EL MAPA ES MUCHO MÁS GRANDE QUE EL ÁREA REAL DE NAVEGACIÓN
+    std::cout << "startPose: \n"  << startPose << std::endl;
+    std::cout << "goalPose: \n" << goalPose << std::endl;
+    std::cout << "resultPath: \n"  << resultPath << std::endl;
+    std::cout << "Mapa: \n" << map.data.size() << std::endl;
     std::cout << "PathCalculator.-> Calculating by A* from " << startPose.position.x << "  ";
     std::cout << startPose.position.y << "  to " << goalPose.position.x << "  " << goalPose.position.y << std::endl;
     int startCellX = (int)((startPose.position.x - map.info.origin.position.x)/map.info.resolution);
@@ -190,8 +194,32 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
     int startCell = startCellY * map.info.width + startCellX;
     int goalCell = goalCellY * map.info.width + goalCellX;
 
-    map = PathCalculator::GrowObstacles(map, 0.15);
-    
+
+    std::cout << "X1: "  << startPose.position.x << std::endl;
+    std::cout << "Y1:"  << startPose.position.y << std::endl;
+    std::cout << "Centro del Mapa en X * Resolution: "  << map.info.origin.position.x << std::endl;
+
+    std::cout << "Centro del Mapa en Y * Resolution: "  << map.info.origin.position.y << std::endl;
+
+    std::cout << "Map Resolution: "  << map.info.resolution << std::endl;
+    std::cout << "Resultado Xi: "  << startCellX << std::endl;
+    std::cout << "Resultado Yi: "  << startCellY << std::endl;
+
+    std::cout << "X2: "  << goalPose.position.x << std::endl;
+    std::cout << "Y2: "  << goalPose.position.y << std::endl;
+
+    std::cout << "Celda final: "  << goalCell << std::endl;
+    std::cout << "Celda Inicial: "  << startCell << std::endl;
+
+    std::cout << "Dimenciones en celdas del Mapa: "  << map.info.width << std::endl;
+
+    //std::cout << "Obs 1? "  << (int)(map.data[goalCell]) << std::endl;
+    //std::cout << "Obs 2? "  << map.data[startCell] << std::endl;
+
+
+
+    map = PathCalculator::GrowObstacles(map, 0.15);//new map
+    //???
     if(map.data[goalCell] > 40 || map.data[goalCell] < 0)
     {
         std::cout << "PathCalculator.-> Cannot calculate path: goal point is inside occupied space" << std::endl;
@@ -204,35 +232,40 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
     }
 
     //std::cout << "Creating arrays for dijkstra data" << std::endl;
-    bool* isKnown = new bool[map.data.size()];
+    bool* isKnown = new bool[map.data.size()];//conocida
     int* g_values = new int[map.data.size()];
     int* f_values = new int[map.data.size()];
     int* previous = new int[map.data.size()];
-    bool* visited = new bool[map.data.size()];
+    bool* visited = new bool[map.data.size()];//visitada
     int* neighbors = new int[map.data.size()];
     int* waveFrontPotentials = new int[map.data.size()];
     int* nearnessToObstacles = new int[map.data.size()];
     std::vector<int> visitedAndNotKnown;
     
-    int currentCell = startCell;
+    int currentCell = startCell;//Pos Inicio
 
     //std::cout << "Initializing aux arrays for dijkstra" << std::endl;
     //std::cout << "Map data size: " << map.data.size() << std::endl;
     
-    if(!PathCalculator::NearnessToObstacles(map, 0.6, nearnessToObstacles))
-    {
+    //if(!
+    PathCalculator::NearnessToObstacles(map, 0.6, nearnessToObstacles);//)
+    /*{
         std::cout << "PathCalculator.->Cannot calculate nearness to obstacles u.u" << std::endl;
         return false;
-    }
+    }//*/
 
     for(int i=0; i< map.data.size(); i++)
     {
         isKnown[i] = map.data[i] > 40 || map.data[i] < 0;
         g_values[i] = INT_MAX;
-        f_values[i] = INT_MAX;
+        f_values[i] = INT_MAX;//define
         previous[i] = -1;
         visited[i] = map.data[i] > 40 || map.data[i] < 0;
     }
+
+    std::cout<< "valor 1 " << visited[8000000] << std::endl;
+    std::cout<< "valor 2 " << isKnown[currentCell] << std::endl;
+
     for(int i=0; i< 8; i++)
         neighbors[i] = 0;
 
@@ -244,16 +277,22 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
     int attempts = 0;
     //std::cout << "Starting search.." << std::endl;
     //std::cout << "GoalCellX: " << goalCellX << " GoalCellY: " << goalCellY << std::endl;
-    while(currentCell != goalCell && !fail && attempts < map.data.size())
+    while(currentCell != goalCell && !fail && attempts < 1000000)
     {
         //std::cout << "Current cell: " << currentCell << std::endl;
         //4-connectivity
-        neighbors[0] = currentCell - map.info.width;
+        neighbors[0] = currentCell - map.info.width;//pos actual
         neighbors[1] = currentCell - 1;
         neighbors[2] = currentCell + 1;
         neighbors[3] = currentCell + map.info.width;
+
+
+        neighbors[4] = currentCell - map.info.width;
+        neighbors[5] = currentCell - 1;
+        neighbors[6] = currentCell + 1;
+        neighbors[7] = currentCell + map.info.width;
         int connectivity = 4;
-        if(calculateDiagonalPaths)
+        /*if(calculateDiagonalPaths)//global primero no se calculan
         {
 			//8-connectivity
 			neighbors[4] = currentCell - map.info.width - 1;
@@ -261,7 +300,7 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
 			neighbors[6] = currentCell + map.info.width - 1;
 			neighbors[7] = currentCell + map.info.width + 1;
 			connectivity = 8;
-        }
+        }*/
         //for (int i=0; i< 8; i++)
         for(int i=0; i<connectivity; i++) //Only check neighbors with 4-connectivity
         {
@@ -270,40 +309,48 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
             int g_value = g_values[currentCell] + 1 + nearnessToObstacles[neighbors[i]]; 
             //h_value is the manhattan distance from the cell to the goal
             int h_value;
-            if(calculateDiagonalPaths)
+            /*if(calculateDiagonalPaths)
             {
             	//int h_value = abs((neighbors[i]%map.info.width) - goalCellX) + abs((neighbors[i]/map.info.width) - goalCellY);
 	    		int h_value_x = neighbors[i]%map.info.width - goalCellX;
 	    		int h_value_y = neighbors[i]/map.info.width - goalCellY;
 	    		h_value = (int)(sqrt(h_value_x*h_value_x + h_value_y*h_value_y));
 	    	}
-	    	else
-	    		h_value = abs((neighbors[i]%map.info.width) - goalCellX) + abs((neighbors[i]/map.info.width) - goalCellY);
-            //std::cout<<"n:"<<neighbors[i]<<" nX: "<<neighborX<<" nY: "<<neighborY<<" g: "<<g_value<<" h: "<<h_value<<" f: "<<(h_value+g_value)<< std::endl;
+	    	else//*/
+	    	h_value = abs((neighbors[i]%map.info.width) - goalCellX) + abs((neighbors[i]/map.info.width) - goalCellY);
+            //std::cout<<"n: ["<< attempts <<"] "<<neighbors[i]<<" g: "<<g_value<<" h: "<<h_value<<" f: "<<(h_value+g_value)<< std::endl;
             if(g_value < g_values[neighbors[i]])
             {
                 //std::cout << "Assigning acc dist " << tempDist << " to cell: " << neighbors[i] << std::endl;
                 g_values[neighbors[i]] = g_value;
                 f_values[neighbors[i]] = g_value + h_value;
-                previous[neighbors[i]] = currentCell;
+                previous[neighbors[i]] = currentCell;//Posicion actual
             }
+            //std::cout<<"Que es? " << visited[neighbors[i]] << std::endl;
             if(!visited[neighbors[i]])
+            {//vacia segun la pos que se va a tomar
                 visitedAndNotKnown.push_back(neighbors[i]);
-            visited[neighbors[i]] = true;
+                //std::cout<<"Que es "<< attempts<< "? " << visited[neighbors[i]] << std::endl;
+                //std::cout<<"Que es 2? " << visitedAndNotKnown[i] << std::endl;
+            }
+            visited[neighbors[i]] = true;//marca como ya usado
+            //std::cout << visited[neighbors[i]] << std::endl;
         }
+        // revizar las 4/8 posiciones
         int min_f_value_idx = -1;
         int min_f_value = std::numeric_limits<int>::max();
-        //std::cout << "Acc distances: ";
+        //std::cout << "maximo? " << min_f_value <<std::endl;
         for(int i=0; i< visitedAndNotKnown.size(); i++)
         {
             //std::cout << visitedAndNotKnown[i] << ":" <<  accDist[visitedAndNotKnown[i]] << "  ";
-            if(f_values[visitedAndNotKnown[i]] < min_f_value)
+            if(f_values[visitedAndNotKnown[i]] < min_f_value)/// reivisa los libres para ver su funcion
             {
-                min_f_value_idx = i;
-                min_f_value = f_values[visitedAndNotKnown[i]];
+                min_f_value_idx = i;//guarda las minimas
+                min_f_value = f_values[visitedAndNotKnown[i]];//se actualiza con el mas peque
+                //std::cout << "maximo? " << min_f_value <<std::endl;
             }
         }
-        //std::cout << std::endl;
+        //std::cout<< "tam cambia? " << visitedAndNotKnown.size() << std::endl;
         if(min_f_value_idx >= 0)
         {
             currentCell = visitedAndNotKnown[min_f_value_idx];
@@ -311,10 +358,11 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
             //std::cout << "New current cell: " << currentCell << std::endl;
             visitedAndNotKnown.erase(visitedAndNotKnown.begin() + min_f_value_idx);
         }
-        else fail = true;
+        //else fail = true;
         
         attempts++;
     }
+
     //std::cout << "PathCalculator.->A* finished after " << attempts << " attempts" << std::endl;
     if(fail)
     {
@@ -332,6 +380,8 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
     resultPath.header.frame_id = "map";
     resultPath.poses.clear();
     resultPath.poses.push_back(p);
+
+    std::cout <<"Dibujo R: "<< resultPath <<std::endl; 
 
     while(previous[currentCell] != -1)
     {
@@ -352,24 +402,402 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
     return true;
 }
 
+bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& startPose, geometry_msgs::Pose& goalPose,nav_msgs::Path& resultPath)
+{
+    //HAY UN MEGABUG EN ESTE ALGORITMO PORQUE NO ESTOY TOMANDO EN CUENTA QUE EN LOS BORDES DEL
+    //MAPA NO SE PUEDE APLICAR CONECTIVIDAD CUATRO NI OCHO. FALTA RESTRINGIR EL RECORRIDO A LOS BORDES MENOS UNO.
+    //POR AHORA FUNCIONA XQ CONFÍO EN QUE EL MAPA ES MUCHO MÁS GRANDE QUE EL ÁREA REAL DE NAVEGACIÓN
+    std::cout << "startPose: \n"  << startPose << std::endl;
+    std::cout << "goalPose: \n" << goalPose << std::endl;
+    std::cout << "resultPath: \n"  << resultPath << std::endl;
+    std::cout << "Mapa: \n" << map.data.size() << std::endl;
+    std::cout << "PathCalculator.-> Calculating by A* from " << startPose.position.x << "  ";
+    std::cout << startPose.position.y << "  to " << goalPose.position.x << "  " << goalPose.position.y << std::endl;
+    int startCellX = (int)((startPose.position.x - map.info.origin.position.x)/map.info.resolution);
+    int startCellY = (int)((startPose.position.y - map.info.origin.position.y)/map.info.resolution);
+    int goalCellX = (int)((goalPose.position.x - map.info.origin.position.x)/map.info.resolution);
+    int goalCellY = (int)((goalPose.position.y - map.info.origin.position.y)/map.info.resolution);
+    int startCell = startCellY * map.info.width + startCellX;
+    int goalCell = goalCellY * map.info.width + goalCellX;
+
+
+    std::cout << "X1: "  << startPose.position.x << std::endl;
+    std::cout << "Y1:"  << startPose.position.y << std::endl;
+    std::cout << "Centro del Mapa en X * Resolution: "  << map.info.origin.position.x << std::endl;
+
+    std::cout << "Centro del Mapa en Y * Resolution: "  << map.info.origin.position.y << std::endl;
+
+    std::cout << "Map Resolution: "  << map.info.resolution << std::endl;
+    std::cout << "Resultado Xi: "  << startCellX << std::endl;
+    std::cout << "Resultado Yi: "  << startCellY << std::endl;
+
+    std::cout << "X2: "  << goalPose.position.x << std::endl;
+    std::cout << "Y2: "  << goalPose.position.y << std::endl;
+
+    std::cout << "Celda final: "  << goalCell << std::endl;
+    std::cout << "Celda Inicial: "  << startCell << std::endl;
+
+    std::cout << "Dimenciones en celdas del Mapa:"  << map.info.width << std::endl; //4000
+
+
+
+    //std::cout << "Obs 1? "  << (int)(map.data[goalCell]) << std::endl;
+    //std::cout << "Obs 2? "  << map.data[startCell] << std::endl;
+
+
+
+    map = PathCalculator::GrowObstacles(map, 0.15);//new map
+    //???
+    if(map.data[goalCell] > 40 || map.data[goalCell] < 0)
+    {
+        std::cout<< "Celda final ocupada?? " << int(map.data[startCell]) << std::endl;
+        std::cout << "PathCalculator.->Cannot calculate path: goal point is inside occupied space: "<< int(map.data[goalCell]) << std::endl;
+        return false;
+    }
+    if(map.data[startCell] > 40 || map.data[startCell] < 0)
+    {
+        std::cout << "PathCalculator.-> Cannot calculate path: start point is inside occupied space" << map.data[startCell] << std::endl;
+        return false;
+    }
+
+    //std::cout << "Creating arrays for dijkstra data" << std::endl;
+    bool* isKnown = new bool[map.data.size()];//conocida
+    int* g_values = new int[map.data.size()];
+    int* f_values = new int[map.data.size()];
+    int* previous = new int[map.data.size()];
+    bool* visited = new bool[map.data.size()];//visitada
+    int* neighbors = new int[map.data.size()];
+    int* waveFrontPotentials = new int[map.data.size()];
+    int* nearnessToObstacles = new int[map.data.size()];
+
+    int* arbol1 = new int[map.data.size()];
+    int* arbol2 = new int[map.data.size()];
+
+
+    //std::cout<< "Celda final2 ocupada?? " << map.data[goalCell] << std::endl;
+    std::vector<int> visitedAndNotKnown;
+    
+    int currentCell = startCell;//Pos Inicio
+
+    //std::cout << "Initializing aux arrays for dijkstra" << std::endl;
+    //std::cout << "Map data size: " << map.data.size() << std::endl;
+    
+
+    PathCalculator::NearnessToObstacles(map, 0.6, nearnessToObstacles);//)
+
+
+    /*{
+        std::cout << "PathCalculator.->Cannot calculate nearness to obstacles u.u" << std::endl;
+        return false;
+    }//*/
+
+    for(int i=0; i< map.data.size(); i++)
+    {
+        isKnown[i] = map.data[i] > 40 || map.data[i] < 0;
+        arbol1[i] = 0;
+        arbol2[i] = 0;
+
+    }
+
+    //std::cout<< "Celda final ocupada?? " << isKnown[goalCell] << std::endl;
+
+    //std::cout<< "valor 1 " << visited[8000000] << std::endl;
+    
+
+    for(int i=0; i< 8; i++)
+    {
+        neighbors[i] = 0;
+    }
+
+    int nn1 = 0;
+    int nn2 = 0;
+    isKnown[currentCell] = true;
+    int attempts = 0;
+    int ale = 0;
+    int iteraciones = 5000;
+    arbol1[0] = currentCell;//iniciando en la posicion actual
+    arbol2[0] = goalCell;//iniciando en la posicion final
+    int block = 0;
+    int ciclo1 = 1;
+    int ciclo2 = 1;
+    int p1 = 0;
+    int p2 = 0;
+    srand(time(NULL));
+    bool cruzo = false;
+    int origin1 = 0;
+    int origin2 = 0;
+    int goalCellF = goalCell;
+    std::cout << "Dis F->" << PathCalculator::Distance(currentCell,goalCell,map) << std::endl;
+
+
+    while(!cruzo && attempts < iteraciones)
+    {
+        ale = rand()%16000000;
+        nn1 = arbol1[0];
+        nn2 = arbol2[0];
+
+        for(int i=0; i<ciclo1; i++)
+        {
+            p1 = arbol1[i];
+            if(PathCalculator::Distance(p1,ale,map) < PathCalculator::Distance(nn1,ale,map))
+                nn1 = p1;
+        }//Obteniendo el nodo del arbol mas cercano al punto aleatorio
+
+        currentCell = nn1;
+
+        neighbors[0] = currentCell - map.info.width - 1;//pos actual
+        neighbors[1] = currentCell - map.info.width;
+        neighbors[2] = currentCell - map.info.width + 1;
+        neighbors[3] = currentCell - 1;
+        neighbors[4] = currentCell + 1;
+        neighbors[5] = currentCell + map.info.width - 1;
+        neighbors[6] = currentCell + map.info.width;
+        neighbors[7] = currentCell + map.info.width + 1;
+
+        block = PathCalculator::Celda(currentCell,ale,map);
+
+        if(!isKnown[neighbors[block]])
+        {
+            //std::cout << "Celda[" << ciclo1 << "]->"<< neighbors[block] << std::endl;            
+            arbol1[ciclo1] = neighbors[block];
+            for(int l=0; l<ciclo2; l++)
+            {
+                if((PathCalculator::Distance(neighbors[block],arbol2[l],map) < 2.0) && (!cruzo))
+                {
+                    std::cout << "Acept1" << std::endl;
+                    cruzo = true;
+                    origin1 = neighbors[block];
+                    origin2 = arbol2[l];
+                    //std::cout << "O1->" << origin1 << " O2->"<< origin2 << std::endl;
+                }
+            }
+            ciclo1 ++;
+        }
+
+        isKnown[neighbors[block]] = true;
+
+        for(int i=0; i<ciclo2; i++)
+        {
+            p2 = arbol2[i];
+            if(PathCalculator::Distance(p2,ale,map) < PathCalculator::Distance(nn2,ale,map))
+                nn2 = p2;
+        }
+
+        goalCell = nn2;
+
+        neighbors[0] = goalCell - map.info.width - 1;//pos actual
+        neighbors[1] = goalCell - map.info.width;
+        neighbors[2] = goalCell - map.info.width + 1;
+        neighbors[3] = goalCell - 1;
+        neighbors[4] = goalCell + 1;
+        neighbors[5] = goalCell + map.info.width - 1;
+        neighbors[6] = goalCell + map.info.width;
+        neighbors[7] = goalCell + map.info.width + 1;
+
+        block = PathCalculator::Celda(goalCell,ale,map);
+
+        if(!isKnown[neighbors[block]])
+        {
+            arbol2[ciclo2] = neighbors[block];
+            for(int l=0; l<ciclo1; l++)
+            {
+                if((PathCalculator::Distance(neighbors[block],arbol1[l],map) < 5.0) && (!cruzo))
+                {
+                    std::cout << "Acept2" << std::endl;
+                    cruzo = true;
+                    origin1 = arbol1[l];
+                    origin2 = neighbors[block];
+                    //std::cout << "O1->" << origin1 << " O2->"<< origin2 << std::endl;
+                }
+            }
+            ciclo2 ++;
+        }
+        isKnown[neighbors[block]] = true;        
+        attempts++; 
+    }
+    std::cout << "Iteraciones->"<< attempts << std::endl;
+
+    std::cout << "O1->" << origin1 << " O2->"<< origin2 << std::endl;
+    
+    bool search = false;
+    int r,u,s,a;
+    int* ruta1 = new int[ciclo1 + ciclo2 -2];
+    int* ruta2 = new int[ciclo2-1];
+    int cont = 0;
+
+    while(!search && cruzo)// && cont < 35)
+    {
+        for(int v=0; v<ciclo1 + ciclo2 -2; v++)
+        {
+            ruta1[v] = 0;
+        }
+        ruta1[0] = arbol1[0];
+        r = 1;
+        u = ruta1[0];
+        for(int v=1; v<ciclo1 + ciclo2-2; v++)
+        {
+            s = arbol1[v];
+            if(PathCalculator::Distance(u,s,map) < 1.415)
+            {
+                ruta1[r] = arbol1[v];
+                u = ruta1[r];
+                r++;
+                a = v;
+            }
+        }
+        if(ruta1[r-1] == origin1)
+        {
+            std::cout << "Funciona" << std::endl;
+            search = true;
+        }
+        else
+            arbol1[a] = -1;
+        cont ++;
+        //std::cout << " Bucle??" << std::endl;
+    }
+
+    int f1 = r;
+
+    ruta1[f1] = origin2;
+    
+    search = false;
+    cont = 0;
+
+    while(!search && cruzo)// && cont < 15)
+    {
+        for(int v=0; v<ciclo2; v++)
+        {
+            ruta2[v] = 0;
+        }
+        ruta2[0] = arbol2[0];
+        r = 1;
+        u = ruta2[0];
+        for(int v=1; v<ciclo2; v++)
+        {
+            s = arbol2[v];
+            if(PathCalculator::Distance(u,s,map) < 1.415)
+            {
+                ruta2[r] = arbol2[v];
+                u = ruta2[r];
+                r++;
+                a = v;
+            }
+        }
+        if(ruta2[r-1] == origin2)
+        {
+            std::cout << "Funciona" << std::endl;
+            search = true;
+        }
+        else
+            arbol2[a] = 0;
+
+        cont++;
+    }
+
+    int f2 = r;
+    int f21 = r;
+
+    int NumVer = f1+f2;
+    
+    
+    for(int l=1; l<f2+1; l++)
+    {
+        ruta1[f1+l] = ruta2[f21-1];
+        f21 --;
+    }
+
+    std::cout << "Final Cell->" << ruta1[ver] << std::endl;
+
+    
+    int v1 = ruta1[0];
+    r = 0;
+    int final[NumVer];
+    final[r] = v1;
+    int v2 = ruta1[NumVer];
+    r ++;
+    for(int l=1; l<f1+f2; l++)
+    {
+        final[l] = 0;
+    }
+
+    //while()
+        if(PathCalculator::Line(v1, v2, map, isKnown) || PathCalculator::Distance(v1,v2,map) < 1.415)
+        {
+            r++;
+            final[r];
+            for(int ve=NumVer; ve<NumVer+1; ve++)
+            {
+                r++;
+                final[r] = ruta1[ve];
+            }
+            v1 = ruta1[ver];
+            ver = ver 
+        }
+ 
+
+
+
+
+    //std::cout << "PathCalculator.->A* finished after " << attempts << " attempts" << std::endl;
+    if(!cruzo)
+    {
+        std::cout << "PathCalculator.-> Cannot find path to goal point by RRT :'( ->" << std::endl;
+        return false;
+    }
+    //std::cout << "PathCalculator.->Total path cost: " << g_values[goalCell] << std::endl;
+
+    geometry_msgs::PoseStamped p;
+    currentCell = goalCellF; //Celda Final
+    p.pose.position.x = (currentCell % map.info.width)*map.info.resolution + map.info.origin.position.x;
+    p.pose.position.y = (currentCell / map.info.width)*map.info.resolution + map.info.origin.position.y;
+    p.pose.orientation.w = 1;
+    p.header.frame_id = "map";
+    resultPath.header.frame_id = "map";
+    resultPath.poses.clear();
+    resultPath.poses.push_back(p);
+
+    for(int j=f1+f2; j>0; j--)//while(arbol[currentCell] != -1)
+    {
+        currentCell = ruta1[j-1];
+        //std::cout<<"Camino de celdas: "<< currentCell << std::endl; 
+        p.pose.position.x = (currentCell % map.info.width)*map.info.resolution + map.info.origin.position.x;
+        p.pose.position.y = (currentCell / map.info.width)*map.info.resolution + map.info.origin.position.y;
+        resultPath.poses.insert(resultPath.poses.begin(), p);
+    }
+    std::cout << p <<std::endl;
+
+    delete[] isKnown;
+    delete[] g_values;
+    delete[] f_values;
+    delete[] previous;
+    delete[] neighbors;
+    delete[] visited;
+
+    std::cout << "PathCalculator.->Resulting path by A* has " << resultPath.poses.size() << " points." << std::endl;
+    return true;
+}
+
 nav_msgs::OccupancyGrid PathCalculator::GrowObstacles(nav_msgs::OccupancyGrid& map, float growDist)
 {
     //HAY UN MEGABUG EN ESTE ALGORITMO PORQUE NO ESTOY TOMANDO EN CUENTA QUE EN LOS BORDES DEL
     //MAPA NO SE PUEDE APLICAR CONECTIVIDAD CUATRO NI OCHO. FALTA RESTRINGIR EL RECORRIDO A LOS BORDES MENOS UNO.
     //POR AHORA FUNCIONA XQ CONFÍO EN QUE EL MAPA ES MUCHO MÁS GRANDE QUE EL ÁREA REAL DE NAVEGACIÓN
-    if(growDist <= 0)
+    if(growDist <= 0)// 0.15
     {
         std::cout << "PathCalculator.->Cannot grow map. Grow dist must be greater than zero." << std::endl;
         return map;
     }
-    nav_msgs::OccupancyGrid newMap = map;
+
+    nav_msgs::OccupancyGrid newMap = map;//Copiar
     
-    int growSteps = (int)(growDist / map.info.resolution);
-    int boxSize = (2*growSteps + 1) * (2*growSteps + 1);
-    int* neighbors = new int[boxSize];
+    int growSteps = (int)(growDist / map.info.resolution);//>> 0.15/0.5 = 3
+    int boxSize = (2*growSteps + 1) * (2*growSteps + 1);//49
+    int* neighbors = new int[boxSize];//vector
     int counter = 0;
 
     //std::cout << "PathCalculator.->Growing map " << growSteps << " steps" << std::endl;
+    //map.info.width ++ 4000
+    //growDist == 0.15
     for(int i=-growSteps; i<=growSteps; i++)
         for(int j=-growSteps; j<=growSteps; j++)
         {
@@ -383,6 +811,8 @@ nav_msgs::OccupancyGrid PathCalculator::GrowObstacles(nav_msgs::OccupancyGrid& m
     */
     int startIdx = growSteps*map.info.width + growSteps;
     int endIdx = map.data.size() - growSteps*map.info.width - growSteps;
+    std::cout << "tamano 1: " << startIdx << std::endl;
+    std::cout << "tamano 2: " << endIdx << std::endl;
 
     if(endIdx <= 0)
     {
@@ -412,7 +842,7 @@ bool PathCalculator::NearnessToObstacles(nav_msgs::OccupancyGrid& map, float dis
       0 0 0 0 0 0 0 0 0 0 0 0 0 0                           2 2 2 2 2 2 1 0 0 1 2 3 3 3
       Max nearness value will depend on the distance of influence. 
      */
-    if(distOfInfluence < 0)
+    if(distOfInfluence < 0)// 0.6
     {
         std::cout << "PathCalculator.->Cannot calc brushfire. DistOfIncluence must be greater than zero." << std::endl;
     }
@@ -422,13 +852,13 @@ bool PathCalculator::NearnessToObstacles(nav_msgs::OccupancyGrid& map, float dis
         return false;
     }
     
-    int steps = (int)(distOfInfluence / map.info.resolution);
-    //std::cout << "PathCalculator.->Calculating nearness with " << steps << " steps. " << std::endl;
+    int steps = (int)(distOfInfluence / map.info.resolution); // 0.6/0.05 = 12
+    std::cout << "PathCalculator.->Calculating nearness with " << steps << " steps. " << std::endl;
     
-    int boxSize = (steps*2 + 1) * (steps*2 + 1);
+    int boxSize = (steps*2 + 1) * (steps*2 + 1);//= 125
     int* distances = new int[boxSize];
     int* neighbors = new int[boxSize];
-    int startIdx = steps*map.info.width + steps;
+    int startIdx = steps*map.info.width + steps;// 12*4000 + 12
     int endIdx = map.data.size() - steps*map.info.width - steps;
     if(endIdx <= 0)
     {
@@ -448,6 +878,8 @@ bool PathCalculator::NearnessToObstacles(nav_msgs::OccupancyGrid& map, float dis
     //for(int i=0; i < boxSize; i++)
     //    std::cout << distances[i] << " ";
     //std::cout << std::endl;
+
+    std::cout<< "Cambio el tam: " << map.data.size() << std::endl;
 
     for(int i=0; i < map.data.size(); i++)
         resultPotentials[i] = 0;
@@ -471,6 +903,7 @@ nav_msgs::Path PathCalculator::SmoothPath(nav_msgs::Path& path, float weight_dat
         newPath.poses.push_back(path.poses[i]);
     newPath.header.frame_id = "map";
     
+    std::cout<< "Valor? " << path.poses.size() << std::endl;
     if(path.poses.size() < 3)
         return newPath;
 
@@ -497,4 +930,76 @@ nav_msgs::Path PathCalculator::SmoothPath(nav_msgs::Path& path, float weight_dat
     }
     //std::cout << "PathCalculator.->Smoothing finished after " << attempts << " attempts" <<  std::endl;
     return newPath;
+}
+
+int PathCalculator::Celda(int nn, int rand, nav_msgs::OccupancyGrid& map)
+{
+    float nx = (nn % map.info.width)*map.info.resolution + map.info.origin.position.x;
+    float ny = (nn / map.info.width)*map.info.resolution + map.info.origin.position.y;
+    float rx = (rand % map.info.width)*map.info.resolution + map.info.origin.position.x;
+    float ry = (rand / map.info.width)*map.info.resolution + map.info.origin.position.y;
+    float theta = atan2(ry-ny,rx-nx);
+    //std::cout << "Angulo->" << theta << std::endl;
+    //std::cout << "Pi->" << M_PI << std::endl;//3.14159
+
+    if(-M_PI/8 <= theta && theta < M_PI/8)
+        return 4;
+    else if(M_PI/8 <= theta && theta < ((3*M_PI)/8))
+        return 7;
+    else if(((3*M_PI)/8) <= theta && theta < ((5*M_PI)/8))
+        return 6;
+    else if(((5*M_PI)/8) <= theta && theta <= ((7*M_PI)/8))
+        return 5;
+    else if(((-3*M_PI)/8) <= theta && theta < -M_PI/8)
+        return 2;
+    else if(((-5*M_PI)/8) <= theta && theta < ((-3*M_PI)/8))
+        return 1;
+    else if(((-7*M_PI)/8) <= theta && theta < ((-5*M_PI)/8))
+        return 0;
+    else
+        return 3;
+}
+
+float PathCalculator::Distance(int nn, int rand, nav_msgs::OccupancyGrid& map)
+{
+    float nx = (nn % map.info.width)*map.info.resolution + map.info.origin.position.x;
+    float ny = (nn / map.info.width)*map.info.resolution + map.info.origin.position.y;
+    float rx = (rand % map.info.width)*map.info.resolution + map.info.origin.position.x;
+    float ry = (rand / map.info.width)*map.info.resolution + map.info.origin.position.y;
+    float dis = sqrt((nx-rx)*(nx-rx)+(ny-ry)*(ny-ry));
+    //std::cout << "Dis->" << dis << std::endl;
+    return dis/map.info.resolution;
+}
+
+bool PathCalculator::Line(int p1, int p2, nav_msgs::OccupancyGrid& map, bool*& isKnown)
+{
+    float p1x = (p1 % map.info.width)*map.info.resolution + map.info.origin.position.x;
+    float p1y = (p1 / map.info.width)*map.info.resolution + map.info.origin.position.y;
+    float p2x = (p2 % map.info.width)*map.info.resolution + map.info.origin.position.x;
+    float p2y = (p2 / map.info.width)*map.info.resolution + map.info.origin.position.y;
+    
+    float m = 0;
+    if(p1x != p2x)
+        m = ((p2y-p1y)/(p2x-p1x));
+    int x = int(p1x);
+    float b = p1y - m*p1x;
+    float y = m*x + b;
+
+    int CX = (int)((x - map.info.origin.position.x)/map.info.resolution);
+    int CY = (int)((y - map.info.origin.position.y)/map.info.resolution);
+    int Cell = CY * map.info.width + CX;
+
+    while(!isKnown[Cell] && x < p2x)
+    {
+        x ++;
+        y = m*x + b;
+        CX = (int)((x - map.info.origin.position.x)/map.info.resolution);
+        CY = (int)((y - map.info.origin.position.y)/map.info.resolution);
+        Cell = CY * map.info.width + CX;
+    }
+
+    if(x == ceil(p2x))
+        return true;
+    else
+        return false;
 }

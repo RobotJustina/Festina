@@ -18,9 +18,11 @@ bool callbackWaveFrontFromMap(navig_msgs::PathFromMap::Request &req, navig_msgs:
 
 bool callbackAStarFromMap(navig_msgs::PathFromMap::Request &req, navig_msgs::PathFromMap::Response &resp)
 {
+    std::cout << "Cambio de programa?" << resp<<std::endl;
     std::cout << "Reciving path calculatro request ------------------------------" << std::endl;
-    bool success = PathCalculator::AStar(req.map, req.start_pose, req.goal_pose, resp.path);
-    pubMapGrown.publish(req.map);
+    bool success = PathCalculator::RTT(req.map, req.start_pose, req.goal_pose, resp.path);
+    std::cout<< "Que regresa? "<< success << std::endl;
+    //pubMapGrown.publish(req.map);
     if(success)
     {
         resp.path = PathCalculator::SmoothPath(resp.path);

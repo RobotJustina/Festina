@@ -55,7 +55,7 @@ target_link_libraries(obj_reco_node
    ${PCL_LIBRARIES}
    ${OpenCV_LIBS}
    ${catkin_LIBRARIES}
-   /usr/local/lib/libopencv_tracking.so.3.3.1  
+   #/usr/local/lib/libopencv_tracking.so.3.3.1  
 )
 
 

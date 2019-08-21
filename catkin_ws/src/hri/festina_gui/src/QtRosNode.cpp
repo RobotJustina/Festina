@@ -21,7 +21,7 @@ void QtRosNode::run()
         emit updateGraphics();
         loop.sleep();
         ros::spinOnce();
-	if(linearSpeed == 0 && angularSpeed == 0)
+    if(linearSpeed == 0 && angularSpeed == 0)
         {
             if(isZeroSpeedSent > 0)
             {

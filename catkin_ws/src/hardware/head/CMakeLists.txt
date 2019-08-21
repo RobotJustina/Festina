@@ -5,6 +5,7 @@ project(head)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  #ctrl_msgs
   geometry_msgs
   roscpp
   rospy
@@ -12,6 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   message_generation
   hardware_tools #In this package is located the Roboclaw.py
+  dynamixel_sdk
+  tf
 )
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -55,9 +58,15 @@ include_directories(
 )
 
 add_executable(head_node src/head_node.cpp)
+add_executable(head_sdk src/head_sdk.cpp)
 
 add_dependencies(head_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(head_sdk ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(head_node
 	${catkin_LIBRARIES}	
+)
+
+target_link_libraries(head_sdk
+        ${catkin_LIBRARIES}
 )

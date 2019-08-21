@@ -327,8 +327,8 @@ void MainWindow::hdPanTiltChanged(double)
     float goalPan = this->ui->hdTxtPan->value();
     float goalTilt = this->ui->hdTxtTilt->value();
     std::cout << "QMainWindow.->Setting new head goal pose: " << goalPan << "  " << goalTilt  << std::endl;
-    //JustinaHardware::setHeadGoalPose(goalPan, goalTilt);
-    JustinaManip::startHdGoTo(goalPan, goalTilt);
+    JustinaHardware::setHeadGoalPose(goalPan, goalTilt);
+    //JustinaManip::startHdGoTo(goalPan, goalTilt);
 }
 
 void MainWindow::spgSayChanged()

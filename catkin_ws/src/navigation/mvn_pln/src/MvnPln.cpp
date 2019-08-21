@@ -38,14 +38,14 @@ void MvnPln::initROSConnection(ros::NodeHandle* nh)
     this->subRobotStop = nh->subscribe("/hardware/robot_state/stop", 10, &MvnPln::callbackRobotStop, this);
     this->pubGlobalGoalReached = nh->advertise<std_msgs::Bool>("/navigation/global_goal_reached", 10);
     this->pubStopWaitGlobalGoalReached = nh->advertise<std_msgs::Empty>("/navigation/stop_wait_global_goal_reached", 1);
-    this->pubLastPath = nh->advertise<nav_msgs::Path>("/navigation/mvn_pln/last_calc_path", 1);
+    this->pubLastPath = nh->advertise<nav_msgs::Path>("/navigation/mvn_pln/last_calc_path", 1);//Para dibujar
     this->srvPlanPath = nh->advertiseService("/navigation/mvn_pln/plan_path", &MvnPln::callbackPlanPath, this);
     this->subLaserScan = nh->subscribe("/hardware/scan", 1, &MvnPln::callbackLaserScan, this);
     this->subCollisionRisk = nh->subscribe("/navigation/obs_avoid/collision_risk", 10, &MvnPln::callbackCollisionRisk, this);
     this->subCollisionPoint = nh->subscribe("/navigation/obs_avoid/collision_point", 10, &MvnPln::callbackCollisionPoint, this);
 
     this->cltGetMap = nh->serviceClient<nav_msgs::GetMap>("/navigation/localization/static_map");
-    this->cltPathFromMapAStar = nh->serviceClient<navig_msgs::PathFromMap>("/navigation/path_planning/path_calculator/a_star_from_map");
+    this->cltPathFromMapAStar = nh->serviceClient<navig_msgs::PathFromMap>("/navigation/path_planning/path_calculator/a_star_from_map");//llamada al metodo
     this->cltGetRgbdWrtRobot = nh->serviceClient<point_cloud_manager::GetRgbd>("/hardware/point_cloud_man/get_rgbd_wrt_robot");
     tf_listener.waitForTransform("map", "base_link", ros::Time(0), ros::Duration(5.0));
 }
@@ -80,11 +80,13 @@ void MvnPln::spin()
         }
         switch(currentState)
         {
-            case SM_INIT:
+            case SM_INIT: //case 0
+                std::cout<<"Primero?"<<std::endl;
                 std::cout << "MvnPln.->Current state: " << currentState << ". Waiting for new task..." << std::endl;
                 currentState = SM_WAITING_FOR_NEW_TASK;
                 break;
-            case SM_WAITING_FOR_NEW_TASK:
+            case SM_WAITING_FOR_NEW_TASK:// case 1
+                //std::cout<<"Segundo?: "<<currentState<<std::endl;
                 if(this->newTask)
                 {
                     std::cout << "MvnPln.->New task received..." << std::endl;
@@ -96,6 +98,7 @@ void MvnPln::spin()
                 }
                 break;
             case SM_CALCULATE_PATH:
+                std::cout<<"Tercero?: "<<currentState<<std::endl;
                 std::cout << "MvnPln.->Current state: " << currentState << ". Calculating path using map, kinect and laser" << std::endl;
                 std::cout << "MvnPl.->Moving backwards if there is an obstacle before calculating path" << std::endl;
                 if(JustinaNavigation::obstacleInFront())
@@ -113,6 +116,7 @@ void MvnPln::spin()
                 JustinaNavigation::getRobotPose(robotX, robotY, robotTheta);
                 pathSuccess = this->planPath(robotX, robotY, this->goalX, this->goalY, this->lastCalcPath);
                 //JustinaIROS::loggingTrajectory(this->lastCalcPath);
+                std::cout <<"Ya no" << std::endl;
                 if(!pathSuccess)
                 {
                     std::cout<<"MvnPln.->Cannot calc path to "<<this->goalX<<" "<<this->goalY<<" after several attempts" << std::endl;
@@ -362,10 +366,12 @@ void MvnPln::spin()
                 //JustinaNavigation::moveDist(1.0, 6000);
                 currentState = SM_CALCULATE_PATH_AVOIDANCE_CHAIR;
                 break;
-            case SM_CALCULATE_PATH_AVOIDANCE_CHAIR:
+            case SM_CALCULATE_PATH_AVOIDANCE_CHAIR:// no mueve
+                std::cout <<"Ya no" << std::endl;
                 std::cout << "MvnPln.->CurrentState: " << currentState << ". Calculate path to avoidance chair" << std::endl;
                 JustinaNavigation::getRobotPose(robotX, robotY, robotTheta);
                 pathSuccess = this->planPath(robotX, robotY, this->goalX, this->goalY, this->lastCalcPath, true, false, false);
+                std::cout <<"Ya no??? " << std::endl;
                 //JustinaIROS::loggingTrajectory(this->lastCalcPath);
                 if(!pathSuccess)
                 {
@@ -526,6 +532,7 @@ bool MvnPln::planPath(float startX, float startY, float goalX, float goalY, nav_
 
     if(useKinect)
     {
+        std::cout<<"Usar kinect"<<std::endl;
         if(_look_at_goal){
             float robotX, robotY, robotTheta;
             JustinaNavigation::getRobotPose(robotX, robotY, robotTheta);
@@ -534,7 +541,7 @@ bool MvnPln::planPath(float startX, float startY, float goalX, float goalY, nav_
                 return false;
             JustinaManip::hdGoTo(0.0, -0.9, 3000);
         }
-        if(!fillMapWithKinect(augmentedMap))
+        if(!fillMapWithKinect(augmentedMap))///funcion fillMapWithKinect
             return false;
     }
 
@@ -565,12 +572,14 @@ bool MvnPln::planPath(float startX, float startY, float goalX, float goalY, nav_
 	else
 		std::cout << "MvnPln->Not clean the cells and neighbors of the goal destinetion." << std::endl;
 
-	if(_clean_unexplored_map){
+	if(_clean_unexplored_map)
+    {
 		for (size_t i=0; i < augmentedMap.data.size(); i++)
 			if(augmentedMap.data[i] < 0)
 				augmentedMap.data[i] = 0;
 	}
 
+    std::cout << "Cambio?? 1"<<std::endl;
     navig_msgs::PathFromMap srvPathFromMap;
     srvPathFromMap.request.map = augmentedMap;
     srvPathFromMap.request.start_pose.position.x = startX;
@@ -578,6 +587,7 @@ bool MvnPln::planPath(float startX, float startY, float goalX, float goalY, nav_
     srvPathFromMap.request.goal_pose.position.x = goalX;
     srvPathFromMap.request.goal_pose.position.y = goalY;
 
+    //std::cout << "srvPathFromMap: "<< srvPathFromMap.request.start_pose.position.x <<std::endl;
     bool success;
     if((success = this->cltPathFromMapAStar.call(srvPathFromMap)))
         std::cout << "MvnPln.->Path calculated succesfully by path_calculator using A* using map and laser" << std::endl;
@@ -587,7 +597,7 @@ bool MvnPln::planPath(float startX, float startY, float goalX, float goalY, nav_
 
     path = srvPathFromMap.response.path;
     this->lastCalcPath = path;
-    this->isLastPathPublished = false;
+    this->isLastPathPublished = false;//dibujar
     return success;
 }
 
@@ -701,6 +711,7 @@ void MvnPln::callbackClickedPoint(const geometry_msgs::PointStamped::ConstPtr& m
 
 void MvnPln::callbackGetCloseLoc(const std_msgs::String::ConstPtr& msg)
 {
+    std::cout<<"Primero, Primero?  "<<std::endl;
     JustinaKnowledge::getKnownLocations(locations);
     if(this->locations.find(msg->data) == this->locations.end())
     {

@@ -47,14 +47,8 @@
       <!-- param name="bag" value="$(find laser_manager)/bags/example.bag"/ -->
       <param name="dynamic_map" value="false"/>
     </node>
-    <node name="head" pkg="head" type="head_node" output="screen">
-      <param name="port" value="/dev/justinaHead"/>
-      <param name="baud" value="1000000"/>
-      <param name="bulk_enable" value="true"/>
-      <param name="write_sync_enable" value="true"/>
-      <param name="read_simul" value="false"/>
-      <param name="simul" value="true"/>
-    </node>
+    <node name="head" pkg="head" type="head_sdk" output="screen">
+    </node> 
     <node name="kinect_man" pkg="kinect_man" type="kinect_man_node" output="screen"
           args="--downsample_by 3 --bag $(find kinect_man)/videos/example.bag"/>
     <node name="joy" pkg="joy" type="joy_node" output="screen"/>
@@ -100,15 +94,15 @@
     <node name="cube_segmentation" pkg="cubes_segmentation" type="cubes_segmentation_node" output="screen"/>
     <!-- This is for load the open pose node  -->
     <!-- node name="openpose_node" pkg="openpose" type="open_pose_node" output="screen">
-	 <param name="debug_mode" value="false"/>
-	 <param name="file_links_config" value="$(find openpose)/OpenPoseConfig.xml"/>
-	 <param name="model_folder" value="$(env OPENPOSE_HOME)/models/"/ -->
+   <param name="debug_mode" value="false"/>
+   <param name="file_links_config" value="$(find openpose)/OpenPoseConfig.xml"/>
+   <param name="model_folder" value="$(env OPENPOSE_HOME)/models/"/ -->
     <!-- This Value is to the old openpose version 1.2 -->
     <!-- param name="net_resolution" value="480x320"/ -->
     <!-- param name="net_resolution" value="256x192"/>
-	 <param name="model_pose" value="BODY_25"/>
-	 <remap from="/vision/openpose/enable_estimate_pose" to="/vision/skeleton_finder/enable_tracking"/>
-	 </node -->
+   <param name="model_pose" value="BODY_25"/>
+   <remap from="/vision/openpose/enable_estimate_pose" to="/vision/skeleton_finder/enable_tracking"/>
+   </node -->
     <node name="gesture_recog_skeleton" pkg="gesture_recog_skeleton" type="gesture_recog_node" output="screen">
       <param name="gesture_method" value="1"/>
       <!-- This params are to waving detect -->

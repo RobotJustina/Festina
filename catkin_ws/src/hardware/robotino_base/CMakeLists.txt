@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
-set(CMAKE_MODULE_PATH /opt/robotino/cmake)
+set(CMAKE_MODULE_PATH /usr/local/robotino/cmake)
 find_package(RobotinoAPI2)
 catkin_package(
 #  INCLUDE_DIRS include
@@ -25,6 +25,9 @@ include_directories(
  include
   ${catkin_INCLUDE_DIRS}
 )
+
+list(APPEND CMAKE_MODULE_PATH "/usr/local/robotino/api2/cmake") #this is where your robotino API2 is installed
+find_package(RobotinoAPI2 REQUIRED)
 
 add_executable(
   robotino_node
