@@ -12,7 +12,10 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
-set(CMAKE_MODULE_PATH /usr/local/robotino/cmake)
+set(CMAKE_MODULE_PATH
+	/usr/local/robotino/api2/cmake
+	/opt/robotino/cmake
+)
 find_package(RobotinoAPI2)
 catkin_package(
 #  INCLUDE_DIRS include

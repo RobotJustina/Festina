@@ -1,0 +1,131 @@
+<?xml version="1.0" ?>
+<robot name="robotino">
+  <link name="base_link">
+    <visual>
+      <origin rpy="0 0 1.570795" xyz="0.01 0 0"/>
+      <geometry>
+        <mesh filename="package://robotino_description/meshes/parts/robotino_base.dae" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.025"/>
+      <geometry>
+        <cylinder length="0.05" radius="0.18"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="wheel0_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robotino_description/meshes/parts/robotino_wheel.dae" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="wheel0_joint" type="fixed">
+    <origin rpy="0 0 1.04719666667" xyz="0.065 0.11 0.04"/>
+    <axis xyz="-1 0 0"/>
+    <parent link="base_link"/>
+    <child link="wheel0_link"/>
+  </joint>
+  <link name="wheel1_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robotino_description/meshes/parts/robotino_wheel.dae" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="wheel1_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="-0.13 0 0.04"/>
+    <axis xyz="1 0 0"/>
+    <parent link="base_link"/>
+    <child link="wheel1_link"/>
+  </joint>
+  <link name="wheel2_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robotino_description/meshes/parts/robotino_wheel.dae" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="wheel2_joint" type="fixed">
+    <origin rpy="0 0 -1.04719666667" xyz="0.065 -0.11 0.04"/>
+    <axis xyz="-1 0 0"/>
+    <parent link="base_link"/>
+    <child link="wheel2_link"/>
+  </joint>
+
+
+  <link name="platform_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robotino_description/model/Robotino3_Platform.dae" scale="0.009 0.009 0.009"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://robotino_description/model/Robotino3_Platform.dae" scale="0.009 0.009 0.009"/>
+      </geometry>
+    </collision>
+  </link>
+<!-- ========== Platform - Joint ========== --> 
+  <joint name="platform_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="platform_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 0" rpy="0 0 0"/>	
+  </joint>
+  
+      <!--
+        Head links and Joint
+    -->
+  <link name="head_link1">
+    <visual>
+      <origin xyz= "-0.01 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.06 0.04 0.04"/></geometry>
+      <material name="blue"><color rgba="0 0.8 0.8 1"/></material>
+    </visual>
+  </link>
+
+  <joint name="pan_connect" type="revolute">
+      <origin xyz="0.15 0 0.7" rpy="0 0 0"/>
+      <parent link="base_link"/>
+      <child link="head_link1"/>
+      <axis xyz="0 0 1" />
+      <limit upper="0" lower="0" effort="0" velocity="0" />
+  </joint>
+  
+  <link name="head_link2">
+    <visual>
+      <origin xyz= "0.0 0 0" rpy="1.5708 0 0"/>
+      <geometry><box size="0.03 0.03 0.03"/></geometry>
+      <material name="orange"><color rgba="1.0 0.5 0 1"/></material>
+    </visual>
+  </link>
+
+  <joint name="tilt_connect" type="revolute">
+    <origin xyz="0 0 0.055" rpy="-1.57 0 0" />
+    <parent link="head_link1"/>
+    <child link="head_link2"/>
+    <axis xyz="0 0 1" />
+    <limit upper="0" lower="0" effort="0" velocity="5" />
+  </joint>
+
+  <link name="kinect_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.207 0.04 0.058"/></geometry>
+      <material name="black"><color rgba="0 0 0 1"/></material>
+    </visual>
+  </link>
+
+  <joint name="kinect_connect" type="fixed">
+      <origin xyz="0.0 -0.05 0" rpy="0 1.5708 0"/>
+      <parent link="head_link2"/>
+      <child link="kinect_link"/>
+  </joint>
+
+</robot>
