@@ -82,6 +82,7 @@ private:
     //Ros stuff for path planning
     ros::ServiceClient cltGetMap;
     ros::ServiceClient cltPathFromMapAStar; //Path calculation using only the occupancy grid
+    ros::ServiceClient cltPathFromMapRRT;
     ros::ServiceClient cltGetRgbdWrtRobot;
     tf::TransformListener tf_listener;
 
@@ -134,9 +135,9 @@ public:
     float kinect_maxZ;
 
 private:
-    bool planPath(float startX, float startY, float goalX, float goalY, nav_msgs::Path& path);
+    bool planPath(float startX, float startY, float goalX, float goalY, nav_msgs::Path& path, int method = 0);
     bool planPath(float startX, float startY, float goalX, float goalY, nav_msgs::Path& path,
-                  bool useMap, bool useLaser, bool useKinect);
+                  bool useMap, bool useLaser, bool useKinect, int method = 0);
     bool fillMapWithKinect(nav_msgs::OccupancyGrid &grid);
     void callbackRobotStop(const std_msgs::Empty::ConstPtr& msg);
     bool callbackPlanPath(navig_msgs::PlanPath::Request& req, navig_msgs::PlanPath::Response& resp);

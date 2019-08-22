@@ -215,14 +215,15 @@ void MainWindow::navBtnCalcPath_pressed()
     else
         goal_location = parts[0];
 
+    int method = this->ui->navCbPlanningMethod->currentIndex();
     if(start_location.compare("") == 0 && goal_location.compare("") == 0)
-        JustinaNavigation::planPath(startX, startY, goalX, goalY, this->calculatedPath);
+        JustinaNavigation::planPath(startX, startY, goalX, goalY, this->calculatedPath, method);
     else if(start_location.compare("") == 0 && goal_location.compare("") != 0)
-        JustinaNavigation::planPath(startX, startY, goal_location, this->calculatedPath);
+        JustinaNavigation::planPath(startX, startY, goal_location, this->calculatedPath, method);
     else if(start_location.compare("") != 0 && goal_location.compare("") == 0)
-        JustinaNavigation::planPath(start_location, goalX, goalY, this->calculatedPath);
+        JustinaNavigation::planPath(start_location, goalX, goalY, this->calculatedPath, method);
     else
-        JustinaNavigation::planPath(start_location, goal_location, this->calculatedPath);
+        JustinaNavigation::planPath(start_location, goal_location, this->calculatedPath, method);
 }
 
 void MainWindow::navBtnExecPath_pressed()

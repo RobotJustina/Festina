@@ -18,8 +18,19 @@ bool callbackWaveFrontFromMap(navig_msgs::PathFromMap::Request &req, navig_msgs:
 
 bool callbackAStarFromMap(navig_msgs::PathFromMap::Request &req, navig_msgs::PathFromMap::Response &resp)
 {
+    bool success = PathCalculator::AStar(req.map, req.start_pose, req.goal_pose, resp.path);
+    if(success)
+    {
+        resp.path = PathCalculator::SmoothPath(resp.path);
+    }
+    return success;
+}
+
+bool callbackRRT(navig_msgs::PathFromMap::Request& req, navig_msgs::PathFromMap::Response& resp)
+{
+    std::cout << "Calculating path by RRT..." << std::endl;
     std::cout << "Cambio de programa?" << resp<<std::endl;
-    std::cout << "Reciving path calculatro request ------------------------------" << std::endl;
+    std::cout << "Receiving path calculatro request ------------------------------" << std::endl;
     bool success = PathCalculator::RTT(req.map, req.start_pose, req.goal_pose, resp.path);
     std::cout<< "Que regresa? "<< success << std::endl;
     //pubMapGrown.publish(req.map);
@@ -36,8 +47,9 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "path_calculator");
     ros::NodeHandle n;
     bool _calculate_diagonal_paths = false;
-    ros::ServiceServer srvPathWaveFrontFromMap = n.advertiseService("path_calculator/wave_front_from_map", callbackWaveFrontFromMap);
-    ros::ServiceServer srvPathAStarFromMap = n.advertiseService("path_calculator/a_star_from_map", callbackAStarFromMap);
+    ros::ServiceServer srvPathWaveFront = n.advertiseService("path_calculator/wave_front_from_map", callbackWaveFrontFromMap);
+    ros::ServiceServer srvPathAStar     = n.advertiseService("path_calculator/a_star_from_map"    , callbackAStarFromMap    );
+    ros::ServiceServer srvPathRRT       = n.advertiseService("path_calculator/rrt_from_map"       , callbackRRT             );
     pubMapGrown = n.advertise<nav_msgs::OccupancyGrid>("path_calculator/grown_map", 1); 
     ros::Rate loop(10);
 

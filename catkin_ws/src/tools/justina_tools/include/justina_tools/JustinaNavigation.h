@@ -40,6 +40,7 @@ private:
     static ros::ServiceClient cltGetPointCloud;
     static ros::ServiceClient cltPathFromMapAStar; //Path calculation using only the occupancy grid
     static ros::ServiceClient cltPathFromMapWaveFront; //Path calculation using only the occupancy grid
+    static ros::ServiceClient cltPathFromMapRRT;
     //Publishers and subscribers for mvn_pln
     static ros::ServiceClient cltPlanPath;
     static ros::Publisher pubMvnPlnGetCloseLoc;
@@ -105,12 +106,12 @@ public:
     static bool goToRelPose(float relX, float relY, float relTheta, int timeOut_ms);
 
     //These methods use the mvn_pln node.
-    static bool planPath(float startX, float startY, float goalX, float goalY, nav_msgs::Path& path);
-    static bool planPath(float goalX, float goalY, nav_msgs::Path& path);
-    static bool planPath(std::string start_location, std::string goal_location, nav_msgs::Path& path);
-    static bool planPath(std::string goal_location, nav_msgs::Path& path);
-    static bool planPath(std::string start_location, float goalX, float goalY, nav_msgs::Path& path);
-    static bool planPath(float startX, float startY, std::string goal_location, nav_msgs::Path& path);
+    static bool planPath(float startX, float startY, float goalX, float goalY, nav_msgs::Path& path, int method=0);
+    static bool planPath(float goalX, float goalY, nav_msgs::Path& path, int method=0);
+    static bool planPath(std::string start_location, std::string goal_location, nav_msgs::Path& path, int method=0);
+    static bool planPath(std::string goal_location, nav_msgs::Path& path, int method=0);
+    static bool planPath(std::string start_location, float goalX, float goalY, nav_msgs::Path& path, int method=0);
+    static bool planPath(float startX, float startY, std::string goal_location, nav_msgs::Path& path, int method=0);
     static void startGetClose(float x, float y);
     static void startGetClose(float x, float y, float angle);
     static void startGetClose(std::string location);

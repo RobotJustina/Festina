@@ -20,6 +20,7 @@ ros::ServiceClient JustinaNavigation::cltGetMap;
 ros::ServiceClient JustinaNavigation::cltGetPointCloud;
 ros::ServiceClient JustinaNavigation::cltPathFromMapAStar; //Path calculation using only the occupancy grid
 ros::ServiceClient JustinaNavigation::cltPathFromMapWaveFront; //Path calculation using only the occupancy grid
+ros::ServiceClient JustinaNavigation::cltPathFromMapRRT;
 //Publishers and subscriber for mvn_pln
 ros::ServiceClient JustinaNavigation::cltPlanPath;
 ros::Publisher JustinaNavigation::pubMvnPlnGetCloseLoc;
@@ -77,6 +78,7 @@ bool JustinaNavigation::setNodeHandle(ros::NodeHandle* nh)
     cltGetMap = nh->serviceClient<nav_msgs::GetMap>("/navigation/localization/static_map");
     cltGetPointCloud = nh->serviceClient<point_cloud_manager::GetRgbd>("/hardware/point_cloud_man/get_rgbd_wrt_robot");
     cltPathFromMapAStar = nh->serviceClient<navig_msgs::PathFromMap>("/navigation/path_planning/path_calculator/a_star_from_map");
+    cltPathFromMapRRT   = nh->serviceClient<navig_msgs::PathFromMap>("/navigation/path_planning/path_calculator/rrt_from_map");
 
     //Publishers and subscribers for mvn_pln
     cltPlanPath = nh->serviceClient<navig_msgs::PlanPath>("/navigation/mvn_pln/plan_path");
@@ -357,7 +359,7 @@ bool JustinaNavigation::goToRelPose(float relX, float relY, float relTheta, int 
 }
 
 //These methods use the mvn_pln node.
-bool JustinaNavigation::planPath(float startX, float startY, float goalX, float goalY, nav_msgs::Path& path)
+bool JustinaNavigation::planPath(float startX, float startY, float goalX, float goalY, nav_msgs::Path& path, int method)
 {
     navig_msgs::PlanPath srv;
     srv.request.start_location_id = "";
@@ -366,29 +368,31 @@ bool JustinaNavigation::planPath(float startX, float startY, float goalX, float 
     srv.request.start_pose.position.y = startY;
     srv.request.goal_pose.position.x = goalX;
     srv.request.goal_pose.position.y = goalY;
+    srv.request.method = method;
     bool success = JustinaNavigation::cltPlanPath.call(srv);
     path = srv.response.path;
     return success;
 }
 
-bool JustinaNavigation::planPath(float goalX, float goalY, nav_msgs::Path& path)
+bool JustinaNavigation::planPath(float goalX, float goalY, nav_msgs::Path& path, int method)
 {
     float robotX, robotY, robotTheta;
     JustinaNavigation::getRobotPose(robotX, robotY, robotTheta);
-    return JustinaNavigation::planPath(robotX, robotY, goalX, goalY, path);
+    return JustinaNavigation::planPath(robotX, robotY, goalX, goalY, path, method);
 }
 
-bool JustinaNavigation::planPath(std::string start_location, std::string goal_location, nav_msgs::Path& path)
+bool JustinaNavigation::planPath(std::string start_location, std::string goal_location, nav_msgs::Path& path, int method)
 {
     navig_msgs::PlanPath srv;
     srv.request.start_location_id = start_location;
     srv.request.goal_location_id = goal_location;
+    srv.request.method = method;
     bool success = JustinaNavigation::cltPlanPath.call(srv);
     path = srv.response.path;
     return success;
 }
 
-bool JustinaNavigation::planPath(std::string goal_location, nav_msgs::Path& path)
+bool JustinaNavigation::planPath(std::string goal_location, nav_msgs::Path& path, int method)
 {
     float robotX, robotY, robotTheta;
     JustinaNavigation::getRobotPose(robotX, robotY, robotTheta);
@@ -397,30 +401,33 @@ bool JustinaNavigation::planPath(std::string goal_location, nav_msgs::Path& path
     srv.request.goal_location_id = goal_location;
     srv.request.start_pose.position.x = robotX;
     srv.request.start_pose.position.y = robotY;
+    srv.request.method = method;
     bool success = JustinaNavigation::cltPlanPath.call(srv);
     path = srv.response.path;
     return success;
 }
 
-bool JustinaNavigation::planPath(std::string start_location, float goalX, float goalY, nav_msgs::Path& path)
+bool JustinaNavigation::planPath(std::string start_location, float goalX, float goalY, nav_msgs::Path& path, int method)
 {
     navig_msgs::PlanPath srv;
     srv.request.start_location_id = start_location;
     srv.request.goal_location_id = "";
     srv.request.goal_pose.position.x = goalX;
     srv.request.goal_pose.position.y = goalY;
+    srv.request.method = method;
     bool success = JustinaNavigation::cltPlanPath.call(srv);
     path = srv.response.path;
     return success;
 }
 
-bool JustinaNavigation::planPath(float startX, float startY, std::string goal_location, nav_msgs::Path& path)
+bool JustinaNavigation::planPath(float startX, float startY, std::string goal_location, nav_msgs::Path& path, int method)
 {
     navig_msgs::PlanPath srv;
     srv.request.start_location_id = "";
     srv.request.goal_location_id = goal_location;
     srv.request.start_pose.position.x = startX;
     srv.request.start_pose.position.y = startY;
+    srv.request.method = method;
     bool success = JustinaNavigation::cltPlanPath.call(srv);
     path = srv.response.path;
     return success;

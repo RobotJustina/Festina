@@ -46,6 +46,7 @@ void MvnPln::initROSConnection(ros::NodeHandle* nh)
 
     this->cltGetMap = nh->serviceClient<nav_msgs::GetMap>("/navigation/localization/static_map");
     this->cltPathFromMapAStar = nh->serviceClient<navig_msgs::PathFromMap>("/navigation/path_planning/path_calculator/a_star_from_map");//llamada al metodo
+    this->cltPathFromMapRRT = nh->serviceClient<navig_msgs::PathFromMap>("/navigation/path_planning/path_calculator/rrt_from_map");
     this->cltGetRgbdWrtRobot = nh->serviceClient<point_cloud_manager::GetRgbd>("/hardware/point_cloud_man/get_rgbd_wrt_robot");
     tf_listener.waitForTransform("map", "base_link", ros::Time(0), ros::Duration(5.0));
 }
@@ -441,24 +442,24 @@ void MvnPln::avoidance_type_obstacle(bool _avoidance_type_obstacle){
     this->_avoidance_type_obstacle = _avoidance_type_obstacle;
 }
 
-bool MvnPln::planPath(float startX, float startY, float goalX, float goalY, nav_msgs::Path& path)
+bool MvnPln::planPath(float startX, float startY, float goalX, float goalY, nav_msgs::Path& path, int method)
 {
     //bool pathSuccess =  this->planPath(startX, startY, goalX, goalY, path, true, true, true);
     //if(!pathSuccess)
-    bool pathSuccess =  this->planPath(startX, startY, goalX, goalY, path, true, false, true);
+    bool pathSuccess =  this->planPath(startX, startY, goalX, goalY, path, true, false, true, method);
     if(!pathSuccess)
-        pathSuccess =  this->planPath(startX, startY, goalX, goalY, path, true, true, false);
+        pathSuccess =  this->planPath(startX, startY, goalX, goalY, path, true, true, false, method);
     if(!pathSuccess)
-        pathSuccess =  this->planPath(startX, startY, goalX, goalY, path, false, true, true);
+        pathSuccess =  this->planPath(startX, startY, goalX, goalY, path, false, true, true, method);
     if(!pathSuccess)
-        pathSuccess =  this->planPath(startX, startY, goalX, goalY, path, false, false, true);
+        pathSuccess =  this->planPath(startX, startY, goalX, goalY, path, false, false, true, method);
     if(!pathSuccess)
-        pathSuccess =  this->planPath(startX, startY, goalX, goalY, path, false, true, false);
+        pathSuccess =  this->planPath(startX, startY, goalX, goalY, path, false, true, false, method);
     return pathSuccess;
 }
 
 bool MvnPln::planPath(float startX, float startY, float goalX, float goalY, nav_msgs::Path& path,
-        bool useMap, bool useLaser, bool useKinect)
+                      bool useMap, bool useLaser, bool useKinect, int method)
 { 
     std::cout << "MvnPln.->Calculating path with augmented map..." << std::endl;
     nav_msgs::OccupancyGrid augmentedMap;
@@ -589,10 +590,21 @@ bool MvnPln::planPath(float startX, float startY, float goalX, float goalY, nav_
 
     //std::cout << "srvPathFromMap: "<< srvPathFromMap.request.start_pose.position.x <<std::endl;
     bool success;
-    if((success = this->cltPathFromMapAStar.call(srvPathFromMap)))
-        std::cout << "MvnPln.->Path calculated succesfully by path_calculator using A* using map and laser" << std::endl;
+    switch(method)
+    {
+    case 0: //navig_msgs::PlanPath::A_STAR:
+        success = this->cltPathFromMapAStar.call(srvPathFromMap);
+        break;
+    case 1: //navig_msgs::PlanPath::RRT:
+        success = this->cltPathFromMapRRT.call(srvPathFromMap);
+        break;
+    default:
+        break;
+    }
+    if(success)
+        std::cout << "MvnPln.->Path calculated succesfully" << std::endl;
     else
-        std::cout << "MvnPln.->Cannot calculate path by path_calculator using A* using map and laser" << std::endl;
+        std::cout << "MvnPln.->Cannot calculate path" << std::endl;
     ros::spinOnce();
 
     path = srvPathFromMap.response.path;
@@ -701,7 +713,7 @@ bool MvnPln::callbackPlanPath(navig_msgs::PlanPath::Request& req, navig_msgs::Pl
         goalY = req.goal_pose.position.y;
     }
 
-    return this->planPath(startX, startY, goalX, goalY, resp.path);
+    return this->planPath(startX, startY, goalX, goalY, resp.path, req.method);
 }
 
 void MvnPln::callbackClickedPoint(const geometry_msgs::PointStamped::ConstPtr& msg)
