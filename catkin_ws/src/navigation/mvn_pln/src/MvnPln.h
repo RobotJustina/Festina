@@ -109,6 +109,7 @@ private:
     bool _avoidance_type_obstacle;
     int _max_frames_count;
     int _min_frames_avoidance;
+    int path_planning_method;
     
     sensor_msgs::LaserScan lastLaserScan;
 

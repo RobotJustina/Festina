@@ -21,6 +21,7 @@ MvnPln::MvnPln()
     this->framesCount = 0;
     this->_max_frames_count = 10;
     this->_min_frames_avoidance = 7;
+    this->path_planning_method = 0;
 }
 
 MvnPln::~MvnPln()
@@ -115,7 +116,7 @@ void MvnPln::spin()
                 //JustinaManip::hdGoTo(0, -0.9, 2500);
                 //JustinaManip::hdGoTo(0, -0.9, 2500);
                 JustinaNavigation::getRobotPose(robotX, robotY, robotTheta);
-                pathSuccess = this->planPath(robotX, robotY, this->goalX, this->goalY, this->lastCalcPath);
+                pathSuccess = this->planPath(robotX, robotY, this->goalX, this->goalY, this->lastCalcPath, path_planning_method);
                 //JustinaIROS::loggingTrajectory(this->lastCalcPath);
                 std::cout <<"Ya no" << std::endl;
                 if(!pathSuccess)
@@ -371,7 +372,7 @@ void MvnPln::spin()
                 std::cout <<"Ya no" << std::endl;
                 std::cout << "MvnPln.->CurrentState: " << currentState << ". Calculate path to avoidance chair" << std::endl;
                 JustinaNavigation::getRobotPose(robotX, robotY, robotTheta);
-                pathSuccess = this->planPath(robotX, robotY, this->goalX, this->goalY, this->lastCalcPath, true, false, false);
+                pathSuccess = this->planPath(robotX, robotY, this->goalX, this->goalY, this->lastCalcPath, true, false, false, path_planning_method);
                 std::cout <<"Ya no??? " << std::endl;
                 //JustinaIROS::loggingTrajectory(this->lastCalcPath);
                 if(!pathSuccess)
@@ -713,6 +714,7 @@ bool MvnPln::callbackPlanPath(navig_msgs::PlanPath::Request& req, navig_msgs::Pl
         goalY = req.goal_pose.position.y;
     }
 
+    path_planning_method = req.method;
     return this->planPath(startX, startY, goalX, goalY, resp.path, req.method);
 }
 
