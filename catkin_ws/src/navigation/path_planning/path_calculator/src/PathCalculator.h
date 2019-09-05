@@ -23,12 +23,15 @@ public:
     static bool AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& startPose, geometry_msgs::Pose& goalPose,
                          nav_msgs::Path& resultPath);
     static bool RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& startPose, geometry_msgs::Pose& goalPose,
-                         nav_msgs::Path& resultPath);
+                         nav_msgs::Path& resultPath, int*& final);
     static nav_msgs::OccupancyGrid GrowObstacles(nav_msgs::OccupancyGrid& map, float growDist);
     static bool NearnessToObstacles(nav_msgs::OccupancyGrid& map, float distOfInfluence, int*& resultPotentials);
     static nav_msgs::Path SmoothPath(nav_msgs::Path& path, float weight_data = 0.1, float weight_smooth = 0.9, float tolerance = 0.00001);
     static bool calculateDiagonalPaths;
     static int Celda(int nn, int rand, nav_msgs::OccupancyGrid& map);
     static float Distance(int nn, int rand, nav_msgs::OccupancyGrid& map);
-    static bool Line(int p1, int p2, nav_msgs::OccupancyGrid& map, bool*& isKnown);
+    static bool Line(int startPose, int goalPose, nav_msgs::OccupancyGrid& map, bool*& isKnown);
+    static void RTTVer(nav_msgs::OccupancyGrid& map,nav_msgs::Path& resultPath, int*& final);
+//private:
+    //int final [16000000];
 };

@@ -181,10 +181,6 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
     //HAY UN MEGABUG EN ESTE ALGORITMO PORQUE NO ESTOY TOMANDO EN CUENTA QUE EN LOS BORDES DEL
     //MAPA NO SE PUEDE APLICAR CONECTIVIDAD CUATRO NI OCHO. FALTA RESTRINGIR EL RECORRIDO A LOS BORDES MENOS UNO.
     //POR AHORA FUNCIONA XQ CONFÍO EN QUE EL MAPA ES MUCHO MÁS GRANDE QUE EL ÁREA REAL DE NAVEGACIÓN
-    std::cout << "startPose: \n"  << startPose << std::endl;
-    std::cout << "goalPose: \n" << goalPose << std::endl;
-    std::cout << "resultPath: \n"  << resultPath << std::endl;
-    std::cout << "Mapa: \n" << map.data.size() << std::endl;
     std::cout << "PathCalculator.-> Calculating by A* from " << startPose.position.x << "  ";
     std::cout << startPose.position.y << "  to " << goalPose.position.x << "  " << goalPose.position.y << std::endl;
     int startCellX = (int)((startPose.position.x - map.info.origin.position.x)/map.info.resolution);
@@ -194,32 +190,8 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
     int startCell = startCellY * map.info.width + startCellX;
     int goalCell = goalCellY * map.info.width + goalCellX;
 
-
-    std::cout << "X1: "  << startPose.position.x << std::endl;
-    std::cout << "Y1:"  << startPose.position.y << std::endl;
-    std::cout << "Centro del Mapa en X * Resolution: "  << map.info.origin.position.x << std::endl;
-
-    std::cout << "Centro del Mapa en Y * Resolution: "  << map.info.origin.position.y << std::endl;
-
-    std::cout << "Map Resolution: "  << map.info.resolution << std::endl;
-    std::cout << "Resultado Xi: "  << startCellX << std::endl;
-    std::cout << "Resultado Yi: "  << startCellY << std::endl;
-
-    std::cout << "X2: "  << goalPose.position.x << std::endl;
-    std::cout << "Y2: "  << goalPose.position.y << std::endl;
-
-    std::cout << "Celda final: "  << goalCell << std::endl;
-    std::cout << "Celda Inicial: "  << startCell << std::endl;
-
-    std::cout << "Dimenciones en celdas del Mapa: "  << map.info.width << std::endl;
-
-    //std::cout << "Obs 1? "  << (int)(map.data[goalCell]) << std::endl;
-    //std::cout << "Obs 2? "  << map.data[startCell] << std::endl;
-
-
-
-    map = PathCalculator::GrowObstacles(map, 0.15);//new map
-    //???
+    map = PathCalculator::GrowObstacles(map, 0.15);
+    
     if(map.data[goalCell] > 40 || map.data[goalCell] < 0)
     {
         std::cout << "PathCalculator.-> Cannot calculate path: goal point is inside occupied space" << std::endl;
@@ -232,40 +204,35 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
     }
 
     //std::cout << "Creating arrays for dijkstra data" << std::endl;
-    bool* isKnown = new bool[map.data.size()];//conocida
+    bool* isKnown = new bool[map.data.size()];
     int* g_values = new int[map.data.size()];
     int* f_values = new int[map.data.size()];
     int* previous = new int[map.data.size()];
-    bool* visited = new bool[map.data.size()];//visitada
+    bool* visited = new bool[map.data.size()];
     int* neighbors = new int[map.data.size()];
     int* waveFrontPotentials = new int[map.data.size()];
     int* nearnessToObstacles = new int[map.data.size()];
     std::vector<int> visitedAndNotKnown;
     
-    int currentCell = startCell;//Pos Inicio
+    int currentCell = startCell;
 
     //std::cout << "Initializing aux arrays for dijkstra" << std::endl;
     //std::cout << "Map data size: " << map.data.size() << std::endl;
     
-    //if(!
-    PathCalculator::NearnessToObstacles(map, 0.6, nearnessToObstacles);//)
-    /*{
+    if(!PathCalculator::NearnessToObstacles(map, 0.6, nearnessToObstacles))
+    {
         std::cout << "PathCalculator.->Cannot calculate nearness to obstacles u.u" << std::endl;
         return false;
-    }//*/
+    }
 
     for(int i=0; i< map.data.size(); i++)
     {
         isKnown[i] = map.data[i] > 40 || map.data[i] < 0;
         g_values[i] = INT_MAX;
-        f_values[i] = INT_MAX;//define
+        f_values[i] = INT_MAX;
         previous[i] = -1;
         visited[i] = map.data[i] > 40 || map.data[i] < 0;
     }
-
-    std::cout<< "valor 1 " << visited[8000000] << std::endl;
-    std::cout<< "valor 2 " << isKnown[currentCell] << std::endl;
-
     for(int i=0; i< 8; i++)
         neighbors[i] = 0;
 
@@ -277,30 +244,24 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
     int attempts = 0;
     //std::cout << "Starting search.." << std::endl;
     //std::cout << "GoalCellX: " << goalCellX << " GoalCellY: " << goalCellY << std::endl;
-    while(currentCell != goalCell && !fail && attempts < 1000000)
+    while(currentCell != goalCell && !fail && attempts < map.data.size())
     {
         //std::cout << "Current cell: " << currentCell << std::endl;
         //4-connectivity
-        neighbors[0] = currentCell - map.info.width;//pos actual
+        neighbors[0] = currentCell - map.info.width;
         neighbors[1] = currentCell - 1;
         neighbors[2] = currentCell + 1;
         neighbors[3] = currentCell + map.info.width;
-
-
-        neighbors[4] = currentCell - map.info.width;
-        neighbors[5] = currentCell - 1;
-        neighbors[6] = currentCell + 1;
-        neighbors[7] = currentCell + map.info.width;
         int connectivity = 4;
-        /*if(calculateDiagonalPaths)//global primero no se calculan
+        if(calculateDiagonalPaths)
         {
-			//8-connectivity
-			neighbors[4] = currentCell - map.info.width - 1;
-			neighbors[5] = currentCell - map.info.width + 1;
-			neighbors[6] = currentCell + map.info.width - 1;
-			neighbors[7] = currentCell + map.info.width + 1;
-			connectivity = 8;
-        }*/
+            //8-connectivity
+            neighbors[4] = currentCell - map.info.width - 1;
+            neighbors[5] = currentCell - map.info.width + 1;
+            neighbors[6] = currentCell + map.info.width - 1;
+            neighbors[7] = currentCell + map.info.width + 1;
+            connectivity = 8;
+        }
         //for (int i=0; i< 8; i++)
         for(int i=0; i<connectivity; i++) //Only check neighbors with 4-connectivity
         {
@@ -309,48 +270,40 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
             int g_value = g_values[currentCell] + 1 + nearnessToObstacles[neighbors[i]]; 
             //h_value is the manhattan distance from the cell to the goal
             int h_value;
-            /*if(calculateDiagonalPaths)
+            if(calculateDiagonalPaths)
             {
-            	//int h_value = abs((neighbors[i]%map.info.width) - goalCellX) + abs((neighbors[i]/map.info.width) - goalCellY);
-	    		int h_value_x = neighbors[i]%map.info.width - goalCellX;
-	    		int h_value_y = neighbors[i]/map.info.width - goalCellY;
-	    		h_value = (int)(sqrt(h_value_x*h_value_x + h_value_y*h_value_y));
-	    	}
-	    	else//*/
-	    	h_value = abs((neighbors[i]%map.info.width) - goalCellX) + abs((neighbors[i]/map.info.width) - goalCellY);
-            //std::cout<<"n: ["<< attempts <<"] "<<neighbors[i]<<" g: "<<g_value<<" h: "<<h_value<<" f: "<<(h_value+g_value)<< std::endl;
+                //int h_value = abs((neighbors[i]%map.info.width) - goalCellX) + abs((neighbors[i]/map.info.width) - goalCellY);
+                int h_value_x = neighbors[i]%map.info.width - goalCellX;
+                int h_value_y = neighbors[i]/map.info.width - goalCellY;
+                h_value = (int)(sqrt(h_value_x*h_value_x + h_value_y*h_value_y));
+            }
+            else
+                h_value = abs((neighbors[i]%map.info.width) - goalCellX) + abs((neighbors[i]/map.info.width) - goalCellY);
+            //std::cout<<"n:"<<neighbors[i]<<" nX: "<<neighborX<<" nY: "<<neighborY<<" g: "<<g_value<<" h: "<<h_value<<" f: "<<(h_value+g_value)<< std::endl;
             if(g_value < g_values[neighbors[i]])
             {
                 //std::cout << "Assigning acc dist " << tempDist << " to cell: " << neighbors[i] << std::endl;
                 g_values[neighbors[i]] = g_value;
                 f_values[neighbors[i]] = g_value + h_value;
-                previous[neighbors[i]] = currentCell;//Posicion actual
+                previous[neighbors[i]] = currentCell;
             }
-            //std::cout<<"Que es? " << visited[neighbors[i]] << std::endl;
             if(!visited[neighbors[i]])
-            {//vacia segun la pos que se va a tomar
                 visitedAndNotKnown.push_back(neighbors[i]);
-                //std::cout<<"Que es "<< attempts<< "? " << visited[neighbors[i]] << std::endl;
-                //std::cout<<"Que es 2? " << visitedAndNotKnown[i] << std::endl;
-            }
-            visited[neighbors[i]] = true;//marca como ya usado
-            //std::cout << visited[neighbors[i]] << std::endl;
+            visited[neighbors[i]] = true;
         }
-        // revizar las 4/8 posiciones
         int min_f_value_idx = -1;
         int min_f_value = std::numeric_limits<int>::max();
-        //std::cout << "maximo? " << min_f_value <<std::endl;
+        //std::cout << "Acc distances: ";
         for(int i=0; i< visitedAndNotKnown.size(); i++)
         {
             //std::cout << visitedAndNotKnown[i] << ":" <<  accDist[visitedAndNotKnown[i]] << "  ";
-            if(f_values[visitedAndNotKnown[i]] < min_f_value)/// reivisa los libres para ver su funcion
+            if(f_values[visitedAndNotKnown[i]] < min_f_value)
             {
-                min_f_value_idx = i;//guarda las minimas
-                min_f_value = f_values[visitedAndNotKnown[i]];//se actualiza con el mas peque
-                //std::cout << "maximo? " << min_f_value <<std::endl;
+                min_f_value_idx = i;
+                min_f_value = f_values[visitedAndNotKnown[i]];
             }
         }
-        //std::cout<< "tam cambia? " << visitedAndNotKnown.size() << std::endl;
+        //std::cout << std::endl;
         if(min_f_value_idx >= 0)
         {
             currentCell = visitedAndNotKnown[min_f_value_idx];
@@ -358,11 +311,10 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
             //std::cout << "New current cell: " << currentCell << std::endl;
             visitedAndNotKnown.erase(visitedAndNotKnown.begin() + min_f_value_idx);
         }
-        //else fail = true;
+        else fail = true;
         
         attempts++;
     }
-
     //std::cout << "PathCalculator.->A* finished after " << attempts << " attempts" << std::endl;
     if(fail)
     {
@@ -380,8 +332,6 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
     resultPath.header.frame_id = "map";
     resultPath.poses.clear();
     resultPath.poses.push_back(p);
-
-    std::cout <<"Dibujo R: "<< resultPath <<std::endl; 
 
     while(previous[currentCell] != -1)
     {
@@ -401,17 +351,9 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
     std::cout << "PathCalculator.->Resulting path by A* has " << resultPath.poses.size() << " points." << std::endl;
     return true;
 }
-
-bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& startPose, geometry_msgs::Pose& goalPose,nav_msgs::Path& resultPath)
+bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& startPose, geometry_msgs::Pose& goalPose,nav_msgs::Path& resultPath, int*&  final)
 {
-    //HAY UN MEGABUG EN ESTE ALGORITMO PORQUE NO ESTOY TOMANDO EN CUENTA QUE EN LOS BORDES DEL
-    //MAPA NO SE PUEDE APLICAR CONECTIVIDAD CUATRO NI OCHO. FALTA RESTRINGIR EL RECORRIDO A LOS BORDES MENOS UNO.
-    //POR AHORA FUNCIONA XQ CONFÍO EN QUE EL MAPA ES MUCHO MÁS GRANDE QUE EL ÁREA REAL DE NAVEGACIÓN
-    std::cout << "startPose: \n"  << startPose << std::endl;
-    std::cout << "goalPose: \n" << goalPose << std::endl;
-    std::cout << "resultPath: \n"  << resultPath << std::endl;
-    std::cout << "Mapa: \n" << map.data.size() << std::endl;
-    std::cout << "PathCalculator.-> Calculating by A* from " << startPose.position.x << "  ";
+    std::cout << "PathCalculator.-> Calculating by RRt* from " << startPose.position.x << "  ";
     std::cout << startPose.position.y << "  to " << goalPose.position.x << "  " << goalPose.position.y << std::endl;
     int startCellX = (int)((startPose.position.x - map.info.origin.position.x)/map.info.resolution);
     int startCellY = (int)((startPose.position.y - map.info.origin.position.y)/map.info.resolution);
@@ -423,34 +365,26 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
 
     std::cout << "X1: "  << startPose.position.x << std::endl;
     std::cout << "Y1:"  << startPose.position.y << std::endl;
-    std::cout << "Centro del Mapa en X * Resolution: "  << map.info.origin.position.x << std::endl;
+    //std::cout << "Centro del Mapa en X * Resolution: "  << map.info.origin.position.x << std::endl;
 
-    std::cout << "Centro del Mapa en Y * Resolution: "  << map.info.origin.position.y << std::endl;
+    //std::cout << "Centro del Mapa en Y * Resolution: "  << map.info.origin.position.y << std::endl;
 
-    std::cout << "Map Resolution: "  << map.info.resolution << std::endl;
-    std::cout << "Resultado Xi: "  << startCellX << std::endl;
-    std::cout << "Resultado Yi: "  << startCellY << std::endl;
+    //std::cout << "Map Resolution: "  << map.info.resolution << std::endl;
 
     std::cout << "X2: "  << goalPose.position.x << std::endl;
     std::cout << "Y2: "  << goalPose.position.y << std::endl;
 
-    std::cout << "Celda final: "  << goalCell << std::endl;
     std::cout << "Celda Inicial: "  << startCell << std::endl;
+    std::cout << "Celda Final: "  << goalCell << std::endl;
+    
 
-    std::cout << "Dimenciones en celdas del Mapa:"  << map.info.width << std::endl; //4000
-
-
-
-    //std::cout << "Obs 1? "  << (int)(map.data[goalCell]) << std::endl;
-    //std::cout << "Obs 2? "  << map.data[startCell] << std::endl;
-
+    //std::cout << "Dimenciones en celdas del Mapa:"  << map.info.width << std::endl; //4000
 
 
     map = PathCalculator::GrowObstacles(map, 0.15);//new map
     //???
     if(map.data[goalCell] > 40 || map.data[goalCell] < 0)
     {
-        std::cout<< "Celda final ocupada?? " << int(map.data[startCell]) << std::endl;
         std::cout << "PathCalculator.->Cannot calculate path: goal point is inside occupied space: "<< int(map.data[goalCell]) << std::endl;
         return false;
     }
@@ -462,12 +396,7 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
 
     //std::cout << "Creating arrays for dijkstra data" << std::endl;
     bool* isKnown = new bool[map.data.size()];//conocida
-    int* g_values = new int[map.data.size()];
-    int* f_values = new int[map.data.size()];
-    int* previous = new int[map.data.size()];
-    bool* visited = new bool[map.data.size()];//visitada
     int* neighbors = new int[map.data.size()];
-    int* waveFrontPotentials = new int[map.data.size()];
     int* nearnessToObstacles = new int[map.data.size()];
 
     int* arbol1 = new int[map.data.size()];
@@ -499,11 +428,6 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
 
     }
 
-    //std::cout<< "Celda final ocupada?? " << isKnown[goalCell] << std::endl;
-
-    //std::cout<< "valor 1 " << visited[8000000] << std::endl;
-    
-
     for(int i=0; i< 8; i++)
     {
         neighbors[i] = 0;
@@ -514,7 +438,7 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
     isKnown[currentCell] = true;
     int attempts = 0;
     int ale = 0;
-    int iteraciones = 5000;
+    int iteraciones = map.data.size();
     arbol1[0] = currentCell;//iniciando en la posicion actual
     arbol2[0] = goalCell;//iniciando en la posicion final
     int block = 0;
@@ -527,12 +451,13 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
     int origin1 = 0;
     int origin2 = 0;
     int goalCellF = goalCell;
+    int rango = 3;
     std::cout << "Dis F->" << PathCalculator::Distance(currentCell,goalCell,map) << std::endl;
 
 
     while(!cruzo && attempts < iteraciones)
     {
-        ale = rand()%16000000;
+        ale = rand()%map.data.size();
         nn1 = arbol1[0];
         nn2 = arbol2[0];
 
@@ -558,20 +483,23 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
 
         if(!isKnown[neighbors[block]])
         {
-            //std::cout << "Celda[" << ciclo1 << "]->"<< neighbors[block] << std::endl;            
-            arbol1[ciclo1] = neighbors[block];
-            for(int l=0; l<ciclo2; l++)
+            //if(!isKnown[neighbors[block]-rango])// && !isKnown[neighbors[block]+rango])// && !isKnown[neighbors[block]-rango*map.info.width] && !isKnown[neighbors[block]+rango*map.info.width])
             {
-                if((PathCalculator::Distance(neighbors[block],arbol2[l],map) < 2.0) && (!cruzo))
+                //std::cout << "Celda[" << ciclo1 << "]->"<< neighbors[block] << std::endl;            
+                arbol1[ciclo1] = neighbors[block];
+                for(int l=0; l<ciclo2; l++)
                 {
-                    std::cout << "Acept1" << std::endl;
-                    cruzo = true;
-                    origin1 = neighbors[block];
-                    origin2 = arbol2[l];
-                    //std::cout << "O1->" << origin1 << " O2->"<< origin2 << std::endl;
+                    if((PathCalculator::Distance(neighbors[block],arbol2[l],map) < 2.0) && (!cruzo))
+                    {
+                        //std::cout << "Acept1" << std::endl;
+                        cruzo = true;
+                        origin1 = neighbors[block];
+                        origin2 = arbol2[l];
+                        //std::cout << "O1->" << origin1 << " O2->"<< origin2 << std::endl;
+                    }
                 }
-            }
-            ciclo1 ++;
+                ciclo1 ++;
+            }            
         }
 
         isKnown[neighbors[block]] = true;
@@ -598,36 +526,46 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
 
         if(!isKnown[neighbors[block]])
         {
-            arbol2[ciclo2] = neighbors[block];
-            for(int l=0; l<ciclo1; l++)
+            //if(!isKnown[neighbors[block]-rango])// && !isKnown[neighbors[block]+rango])// && !isKnown[neighbors[block]-rango*map.info.width] && !isKnown[neighbors[block]+rango*map.info.width])
             {
-                if((PathCalculator::Distance(neighbors[block],arbol1[l],map) < 5.0) && (!cruzo))
+                arbol2[ciclo2] = neighbors[block];
+                for(int l=0; l<ciclo1; l++)
                 {
-                    std::cout << "Acept2" << std::endl;
-                    cruzo = true;
-                    origin1 = arbol1[l];
-                    origin2 = neighbors[block];
-                    //std::cout << "O1->" << origin1 << " O2->"<< origin2 << std::endl;
+                    if((PathCalculator::Distance(neighbors[block],arbol1[l],map) < 5.0) && (!cruzo))
+                    {
+                        //std::cout << "Acept2" << std::endl;
+                        cruzo = true;
+                        origin1 = arbol1[l];
+                        origin2 = neighbors[block];
+                        //std::cout << "O1->" << origin1 << " O2->"<< origin2 << std::endl;
+                    }
                 }
+                ciclo2 ++;
             }
-            ciclo2 ++;
         }
         isKnown[neighbors[block]] = true;        
         attempts++; 
     }
+
+    for(int i=0; i< map.data.size(); i++)
+    {
+        isKnown[arbol1[i]] = false;
+        isKnown[arbol2[i]] = false;
+    }
+
     std::cout << "Iteraciones->"<< attempts << std::endl;
 
-    std::cout << "O1->" << origin1 << " O2->"<< origin2 << std::endl;
+    //std::cout << "O1->" << origin1 << " O2->"<< origin2 << std::endl;
     
     bool search = false;
     int r,u,s,a;
-    int* ruta1 = new int[ciclo1 + ciclo2 -2];
-    int* ruta2 = new int[ciclo2-1];
+    int* ruta1 = new int[map.data.size()];
+    int* ruta2 = new int[map.data.size()];
     int cont = 0;
 
     while(!search && cruzo)// && cont < 35)
     {
-        for(int v=0; v<ciclo1 + ciclo2 -2; v++)
+        for(int v=0; v<ciclo1 + ciclo2; v++)
         {
             ruta1[v] = 0;
         }
@@ -647,7 +585,7 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
         }
         if(ruta1[r-1] == origin1)
         {
-            std::cout << "Funciona" << std::endl;
+            //std::cout << "Funciona" << std::endl;
             search = true;
         }
         else
@@ -685,7 +623,7 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
         }
         if(ruta2[r-1] == origin2)
         {
-            std::cout << "Funciona" << std::endl;
+            //std::cout << "Funciona" << std::endl;
             search = true;
         }
         else
@@ -705,9 +643,13 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
         ruta1[f1+l] = ruta2[f21-1];
         f21 --;
     }
+    for(int k=0; k<NumVer; k++)
+    {
+        final[k] = ruta1[k];
+    }
 
-    //std::cout << "Final Cell->" << ruta1[ver] << std::endl;
-
+    //std::cout << "Final Cell U->" << ruta1[NumVer] << std::endl;
+    /*
     
     int v1 = ruta1[0];
     r = 0;
@@ -715,36 +657,70 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
     final[r] = v1;
     int v2 = ruta1[NumVer];
     r ++;
+    int more = 1;
+    int avan = 0;
+    int verA = 0;
     for(int l=1; l<f1+f2; l++)
     {
         final[l] = 0;
     }
+    std::cout << "Vertice->" << NumVer << std::endl;
+    //std::cout << "v1->" << v1 << " v2->" << v2 << std::endl;
 
-    //while()
-        if(PathCalculator::Line(v1, v2, map, isKnown) || PathCalculator::Distance(v1,v2,map) < 1.415)
-        {
+    while((final[more-1] != ruta1[f1+f2]) &&  cruzo)
+    { 
+        //std::cout << "v1->" << v1 << " v2->" << v2 << std::endl;
+        if(PathCalculator::Line( v1, v2, map, isKnown) || PathCalculator::Distance(v1,v2,map) < 1.415)
+        {            
+            final[r] = v2;
             r++;
-            final[r];
-            for(int ve=NumVer; ve<f1+f2+1; ve++)
-            {
-                r++;
+            //std::cout << "Final Cell Ac->" << v2 << std::endl;
+            for(int ve=verA; ve<f1+f2; ve++)
+            {                
                 final[r] = ruta1[ve];
+                r++;
             }
-            v1 = ruta1[NumVer];
+            verA = NumVer;
+            v1 = ruta1[verA];
             NumVer = f1+f2;
             v2 = ruta1[NumVer];
-
+            more ++;
+            for(int l=more; l<f1+f2; l++)
+            {
+                final[l] = 0;
+                r = more;
+            }
         }
         else
         {
-            if((f1+f2-NumVer) > 10 )
-                NumVer = int(NumVer/2);
-            else
-                NumVer --;
-            v2 = ruta1[NumVer];
-        }
- 
+            if((NumVer-verA) > 10 )
+            {
+                NumVer = int((NumVer+verA)/2);
+                //verA = NumVer;
 
+                //std::cout << "Vertice 1->"<< NumVer<< std::endl;
+            }
+            else
+            {
+                NumVer --;
+                //std::cout << "Vertice 2->"<< NumVer<< std::endl;
+            }
+            v2 = ruta1[NumVer];
+            //NumVer += verA; 
+            //std::cout << "\nCambio de vertice " << v2 << std::endl;
+            //std::cout << "V1->" << v1 << " V2->" << v2 << std::endl;
+        }
+        avan ++;
+    }
+
+    //std::cout << "Final Cell Ac->" << final[more-1] << std::endl;
+
+    std::cout << "NumVer->" << more << std::endl;
+    NumVer = more;
+    /*for(int b=0; b<more; b++)
+    {
+        std::cout << "Final Cell->" << final[b] << std::endl;
+    }//*/
 
 
 
@@ -766,26 +742,161 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
     resultPath.poses.clear();
     resultPath.poses.push_back(p);
 
-    for(int j=f1+f2; j>0; j--)//while(arbol[currentCell] != -1)
+    int OneVer=NumVer;
+
+    while(OneVer > 0)
     {
-        currentCell = ruta1[j-1];
-        //std::cout<<"Camino de celdas: "<< currentCell << std::endl; 
+        currentCell = ruta1[OneVer-1];   
+        //std::cout<<"Camino de celdas-> "<< currentCell << std::endl;      
         p.pose.position.x = (currentCell % map.info.width)*map.info.resolution + map.info.origin.position.x;
         p.pose.position.y = (currentCell / map.info.width)*map.info.resolution + map.info.origin.position.y;
+        //std::cout<<"Camino de celdas-> "<< p.pose.position.x<< " , " << p.pose.position.y << std::endl; 
         resultPath.poses.insert(resultPath.poses.begin(), p);
+        //std::cout<<"Pos-> "<< p.pose.position << std::endl; 
+        OneVer--;
     }
-    std::cout << p <<std::endl;
 
     delete[] isKnown;
-    delete[] g_values;
-    delete[] f_values;
-    delete[] previous;
     delete[] neighbors;
-    delete[] visited;
+    delete[] ruta1;
+    delete[] ruta2;
+    delete[] nearnessToObstacles;
+    delete[] arbol1;
+    delete[] arbol2;
 
-    std::cout << "PathCalculator.->Resulting path by A* has " << resultPath.poses.size() << " points." << std::endl;
+
+    std::cout << "PathCalculator.->Resulting path by RRT* has " << resultPath.poses.size()-2 << " points." << std::endl;
+    //this->final = ruta1;
     return true;
 }
+
+
+void PathCalculator::RTTVer(nav_msgs::OccupancyGrid& map, nav_msgs::Path& resultPath, int*& newRuta)
+{
+    bool* isKnown = new bool[map.data.size()];//conocida
+    int* ruta = new int[map.data.size()];
+    for(int i=0; i< map.data.size(); i++)
+    {
+        isKnown[i] = map.data[i] > 40 || map.data[i] < 0;
+        ruta[i] = newRuta[i];
+    }
+    for(int i=0; i<resultPath.poses.size() + 1; i++)
+    {
+        isKnown[ruta[i]] = false;
+        //std::cout << "Ruta->" << ruta[i] << std::endl;
+    }
+
+    int valor = resultPath.poses.size() - 2;
+    int valorF = resultPath.poses.size() - 2;
+    //std::cout << "Ruta->" << ruta[valor] << std::endl;
+    int NumVer = valor;
+    int more = valor;
+    int final[NumVer];
+    //std::cout << "Vertices->" << NumVer << std::endl;
+
+    for(int ciclo=0; ciclo<2; ciclo++)
+    {
+        valor = more;
+        NumVer = more;
+        int v1 = ruta[0];
+        int r = 0;
+        //int final[NumVer];
+        final[r] = v1;
+        int v2 = ruta[NumVer];
+        r ++;
+        more = 1;
+        int verA = 0;
+        for(int l=1; l<valor; l++)
+        {
+            final[l] = 0;
+        }
+        while((final[more-1] != ruta[valor]))
+        { 
+            //std::cout << "v1->" << v1 << " v2->" << v2 << std::endl;
+            if(PathCalculator::Line( v1, v2, map, isKnown) || PathCalculator::Distance(v1,v2,map) < 2.15)
+            {            
+                final[r] = v2;
+                r++;
+                //std::cout << "Final Cell Ac->" << v2 << std::endl;
+                for(int ve=verA; ve<valor; ve++)
+                {                
+                    final[r] = ruta[ve];
+                    r++;
+                }
+                verA = NumVer;
+                v1 = ruta[verA];
+                NumVer = valor;
+                v2 = ruta[NumVer];
+                more ++;
+                for(int l=more; l<valor; l++)
+                {
+                    final[l] = 0;
+                    r = more;
+                }
+            }
+            else
+            {
+                if((NumVer-verA) > 10 )
+                {
+                    NumVer = int((NumVer+verA)/2);
+                    //verA = NumVer;
+
+                    //std::cout << "Vertice 1->"<< NumVer<< std::endl;
+                }
+                else
+                {
+                    NumVer --;
+                    //std::cout << "Vertice 2->"<< NumVer<< std::endl;
+                }
+                v2 = ruta[NumVer];
+                //NumVer += verA; 
+                //std::cout << "\nCambio de vertice " << v2 << std::endl;
+                //std::cout << "V1->" << v1 << " V2->" << v2 << std::endl;
+            }
+            //avan ++;
+        }    
+        for(int j=0; j<more+10; j++)
+        {
+            ruta[j] = final[j];
+        }
+
+        more --;
+    //std::cout << "Vertices1->" << valor << std::endl;
+    //std::cout << "Vertices2->" << more << std::endl;
+    }
+    //std::cout << "Final Cell Ac->" << final[more-1] << std::endl;
+    std::cout << "PathCalculator.->Resulting path by RRT* has " << more+1 << " points." << std::endl;
+    //std::cout << "Vertices Pos->" << more << std::endl;
+    int currentCell;
+    geometry_msgs::PoseStamped p;
+    p.pose.position.x = resultPath.poses[valorF].pose.position.x;
+    p.pose.position.y = resultPath.poses[valorF].pose.position.y;
+    p.header.frame_id = "map";
+    resultPath.header.frame_id = "map";
+    resultPath.poses.clear();
+    resultPath.poses.push_back(p);
+
+    //std::cout << "X->" << resultPath.poses[valor].pose.position.x <<" Y->" << resultPath.poses[valor].pose.position.y <<  std::endl;
+
+    int OneVer=more;//f1+f2;
+
+    while(OneVer > 0)
+    {
+        currentCell = final[OneVer-1];   
+        //std::cout<<"Camino de celdas-> "<< currentCell << std::endl;      
+        p.pose.position.x = (currentCell % map.info.width)*map.info.resolution + map.info.origin.position.x;
+        p.pose.position.y = (currentCell / map.info.width)*map.info.resolution + map.info.origin.position.y;
+        //std::cout<<"Camino de celdas-> "<< p.pose.position.x<< " , " << p.pose.position.y << std::endl; 
+        resultPath.poses.insert(resultPath.poses.begin(), p);
+        //std::cout<<"Pos-> "<< p.pose.position << std::endl; 
+        OneVer--;
+    } 
+    delete[] isKnown;
+    delete[] ruta;
+
+    //return Path;
+}
+
 
 nav_msgs::OccupancyGrid PathCalculator::GrowObstacles(nav_msgs::OccupancyGrid& map, float growDist)
 {
@@ -821,8 +932,6 @@ nav_msgs::OccupancyGrid PathCalculator::GrowObstacles(nav_msgs::OccupancyGrid& m
     */
     int startIdx = growSteps*map.info.width + growSteps;
     int endIdx = map.data.size() - growSteps*map.info.width - growSteps;
-    std::cout << "tamano 1: " << startIdx << std::endl;
-    std::cout << "tamano 2: " << endIdx << std::endl;
 
     if(endIdx <= 0)
     {
@@ -889,8 +998,6 @@ bool PathCalculator::NearnessToObstacles(nav_msgs::OccupancyGrid& map, float dis
     //    std::cout << distances[i] << " ";
     //std::cout << std::endl;
 
-    std::cout<< "Cambio el tam: " << map.data.size() << std::endl;
-
     for(int i=0; i < map.data.size(); i++)
         resultPotentials[i] = 0;
     
@@ -913,7 +1020,6 @@ nav_msgs::Path PathCalculator::SmoothPath(nav_msgs::Path& path, float weight_dat
         newPath.poses.push_back(path.poses[i]);
     newPath.header.frame_id = "map";
     
-    std::cout<< "Valor? " << path.poses.size() << std::endl;
     if(path.poses.size() < 3)
         return newPath;
 
@@ -981,35 +1087,128 @@ float PathCalculator::Distance(int nn, int rand, nav_msgs::OccupancyGrid& map)
     return dis/map.info.resolution;
 }
 
-bool PathCalculator::Line(int p1, int p2, nav_msgs::OccupancyGrid& map, bool*& isKnown)
+bool PathCalculator::Line(int startPose, int goalPose, nav_msgs::OccupancyGrid& map, bool*& isKnown)
 {
-    float p1x = (p1 % map.info.width)*map.info.resolution + map.info.origin.position.x;
-    float p1y = (p1 / map.info.width)*map.info.resolution + map.info.origin.position.y;
-    float p2x = (p2 % map.info.width)*map.info.resolution + map.info.origin.position.x;
-    float p2y = (p2 / map.info.width)*map.info.resolution + map.info.origin.position.y;
-    
+    float p1x = ((startPose % map.info.width)*map.info.resolution + map.info.origin.position.x);
+    float p1y = ((startPose / map.info.width)*map.info.resolution + map.info.origin.position.y);
+    float p2x = ((goalPose % map.info.width)*map.info.resolution + map.info.origin.position.x);
+    float p2y = ((goalPose / map.info.width)*map.info.resolution + map.info.origin.position.y);
+    /*std::cout << " " << std::endl;
+    std::cout << "X->" << p1x << " Y->" << p1y << std::endl;
+    std::cout << "PX->" << p2x << " PY->" << p2y << std::endl;//*/
     float m = 0;
     if(p1x != p2x)
         m = ((p2y-p1y)/(p2x-p1x));
-    int x = int(p1x);
-    float b = p1y - m*p1x;
-    float y = m*x + b;
+    float y = 0;
+    float x = 0;
+    float b = 0;
 
-    int CX = (int)((x - map.info.origin.position.x)/map.info.resolution);
-    int CY = (int)((y - map.info.origin.position.y)/map.info.resolution);
-    int Cell = CY * map.info.width + CX;
+    float movx = 0;//rint(p1x);
+    float canx = fabs(p1x-p2x); //+ map.info.resolution;
+    float movy = 0;//rint(p1y);
+    float cany = fabs(p1y-p2y); //+ map.info.resolution;
 
-    while(!isKnown[Cell] && x < p2x)
+    if(canx < cany)
     {
-        x ++;
+        y = rint(p1y);
+        b = p1y - m*p1x;
+        if(m != 0)
+            x = (y - b)/m;
+    }
+    else
+    {
+        x = rint(p1x);
+        b = p1y - m*p1x;
         y = m*x + b;
+
+    }
+    
+    /*std::cout << "M->" << m << " B->" << b << std::endl;
+    std::cout << "X->" << x << " Y->" << y << std::endl;
+    std::cout << " " << std::endl;//*/
+
+    int CX = 0;//(int)((x - map.info.origin.position.x)/map.info.resolution);
+    int CY = 0;//(int)((y - map.info.origin.position.y)/map.info.resolution);
+    int Cell = startPose;//CY * map.info.width + CX;
+
+    //std::cout << "Final Celdas->" << Cell<< " ->"<< isKnown[Cell] << std::endl;
+    //std::cout << "P2X->" << p2x << " P1X->" << x << std::endl;
+    
+
+    /*std::cout << "X->" << movx << " Y->" << movy << std::endl;
+    std::cout << "PX->" << canx << " PY->" << cany << std::endl;
+    std::cout << " " << std::endl;
+    //std::cout << "X->" << fabs(p1x-p2x) << " Y->" << fabs(p1y-p2y) << std::endl;*/
+
+    while(!isKnown[Cell] && (movx <= canx) && (movy <= cany))
+    {
+        if(canx > cany) //&& !isKnown[Cell+1])
+        {
+            if(p1x<p2x)
+            {            
+                x = x + map.info.resolution;
+                y = m*x + b;
+                movx = movx + map.info.resolution;
+            }
+            /*else if(m == 0)
+            {    
+                if(p1y<p2y)
+                    y = y + map.info.resolution;
+                else
+                    y = y - map.info.resolution;
+                movy = movy + map.info.resolution;
+            }//*/
+            else
+            {
+                x = x - map.info.resolution;
+                y = m*x + b;
+                movx = movx + map.info.resolution;
+            }
+            
+        }
+        else
+        {
+            //std::cout << "-Y-" << std::endl;
+            if(p1y<p2y)
+            {
+                y = y + map.info.resolution;
+                if(m != 0)
+                    x = (y-b)/m;
+                movy = movy + map.info.resolution;
+            }
+            else
+            {
+                y = y - map.info.resolution;
+                if(m != 0)
+                    x = (y-b)/m;
+                movy = movy + map.info.resolution;
+            }
+        }
+        
         CX = (int)((x - map.info.origin.position.x)/map.info.resolution);
         CY = (int)((y - map.info.origin.position.y)/map.info.resolution);
         Cell = CY * map.info.width + CX;
+        //std::cout << "Xp->" << movx << " Yp->" << movy  << std::endl;
+        //std::cout << "X->" << x << " Y->" << y  << std::endl;
+
+
+        
+        //std::cout << "Final Celdas->" << Cell<< " ->"<< isKnown[Cell] << std::endl;
     }
 
-    if(x == ceil(p2x))
+    /*std::cout << " " << std::endl;
+    std::cout << "Xf->"<< movx << " Yf->" << movy<< std::endl;
+    std::cout << "PX->" << p2x << " PY->" << p2y << std::endl;
+    std::cout << " " << std::endl;//*/
+
+    if(movx > canx || movy > cany)
+    {
+        //std::cout << "Ve " << std::endl;
         return true;
+    }
     else
+    {
+        //std::cout << "Fa" << std::endl;
         return false;
+    }
 }

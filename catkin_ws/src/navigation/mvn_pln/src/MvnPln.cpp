@@ -83,7 +83,6 @@ void MvnPln::spin()
         switch(currentState)
         {
             case SM_INIT: //case 0
-                std::cout<<"Primero?"<<std::endl;
                 std::cout << "MvnPln.->Current state: " << currentState << ". Waiting for new task..." << std::endl;
                 currentState = SM_WAITING_FOR_NEW_TASK;
                 break;
@@ -100,7 +99,6 @@ void MvnPln::spin()
                 }
                 break;
             case SM_CALCULATE_PATH:
-                std::cout<<"Tercero?: "<<currentState<<std::endl;
                 std::cout << "MvnPln.->Current state: " << currentState << ". Calculating path using map, kinect and laser" << std::endl;
                 std::cout << "MvnPl.->Moving backwards if there is an obstacle before calculating path" << std::endl;
                 if(JustinaNavigation::obstacleInFront())
@@ -118,7 +116,6 @@ void MvnPln::spin()
                 JustinaNavigation::getRobotPose(robotX, robotY, robotTheta);
                 pathSuccess = this->planPath(robotX, robotY, this->goalX, this->goalY, this->lastCalcPath, path_planning_method);
                 //JustinaIROS::loggingTrajectory(this->lastCalcPath);
-                std::cout <<"Ya no" << std::endl;
                 if(!pathSuccess)
                 {
                     std::cout<<"MvnPln.->Cannot calc path to "<<this->goalX<<" "<<this->goalY<<" after several attempts" << std::endl;
@@ -368,12 +365,10 @@ void MvnPln::spin()
                 //JustinaNavigation::moveDist(1.0, 6000);
                 currentState = SM_CALCULATE_PATH_AVOIDANCE_CHAIR;
                 break;
-            case SM_CALCULATE_PATH_AVOIDANCE_CHAIR:// no mueve
-                std::cout <<"Ya no" << std::endl;
+            case SM_CALCULATE_PATH_AVOIDANCE_CHAIR:
                 std::cout << "MvnPln.->CurrentState: " << currentState << ". Calculate path to avoidance chair" << std::endl;
                 JustinaNavigation::getRobotPose(robotX, robotY, robotTheta);
                 pathSuccess = this->planPath(robotX, robotY, this->goalX, this->goalY, this->lastCalcPath, true, false, false, path_planning_method);
-                std::cout <<"Ya no??? " << std::endl;
                 //JustinaIROS::loggingTrajectory(this->lastCalcPath);
                 if(!pathSuccess)
                 {
@@ -534,7 +529,6 @@ bool MvnPln::planPath(float startX, float startY, float goalX, float goalY, nav_
 
     if(useKinect)
     {
-        std::cout<<"Usar kinect"<<std::endl;
         if(_look_at_goal){
             float robotX, robotY, robotTheta;
             JustinaNavigation::getRobotPose(robotX, robotY, robotTheta);
@@ -581,7 +575,6 @@ bool MvnPln::planPath(float startX, float startY, float goalX, float goalY, nav_
 				augmentedMap.data[i] = 0;
 	}
 
-    std::cout << "Cambio?? 1"<<std::endl;
     navig_msgs::PathFromMap srvPathFromMap;
     srvPathFromMap.request.map = augmentedMap;
     srvPathFromMap.request.start_pose.position.x = startX;
@@ -725,7 +718,6 @@ void MvnPln::callbackClickedPoint(const geometry_msgs::PointStamped::ConstPtr& m
 
 void MvnPln::callbackGetCloseLoc(const std_msgs::String::ConstPtr& msg)
 {
-    std::cout<<"Primero, Primero?  "<<std::endl;
     JustinaKnowledge::getKnownLocations(locations);
     if(this->locations.find(msg->data) == this->locations.end())
     {
