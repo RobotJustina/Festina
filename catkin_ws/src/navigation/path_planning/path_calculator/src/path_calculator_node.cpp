@@ -31,26 +31,48 @@ bool callbackAStarFromMap(navig_msgs::PathFromMap::Request &req, navig_msgs::Pat
     if(success)
     {
         resp.path = PathCalculator::SmoothPath(resp.path);
+        tracVer.path = resp.path;
+        tracRealGrow.path = resp.path;
         real = true;
     }
     return success;
 }
 
-bool callbackRRT(navig_msgs::PathFromMap::Request& req, navig_msgs::PathFromMap::Response& resp)
+bool callbackRRTExt(navig_msgs::PathFromMap::Request& req, navig_msgs::PathFromMap::Response& resp)
 {    
-    std::cout << "Calculating path by RRT..." << std::endl;
+    std::cout << "Calculating path by RRT-Ext..." << std::endl;
     std::cout << "Receiving path calculatro request ------------------------------" << std::endl;
     int* final = new int[req.map.data.size()];
-    bool success = PathCalculator::RTT(req.map, req.start_pose, req.goal_pose, resp.path, final);
+    bool success = PathCalculator::RTTEXT(req.map, req.start_pose, req.goal_pose, resp.path, final);
     if(success)
     {
         tracReal.path = resp.path;
         tracRealGrow.path = PathCalculator::SmoothPath(tracReal.path);
-        PathCalculator::RTTVer(req.map,resp.path,final);
+        PathCalculator::RTTPost(req.map, resp.path, final);
         tracVer.path = resp.path;
         resp.path = PathCalculator::SmoothPath(resp.path);
         real = true;
-    }    
+    }
+    delete[] final;    
+    return success;
+}
+
+bool callbackRRTConnect(navig_msgs::PathFromMap::Request& req, navig_msgs::PathFromMap::Response& resp)
+{    
+    std::cout << "Calculating path by RRT-Connect..." << std::endl;
+    std::cout << "Receiving path calculatro request ------------------------------" << std::endl;
+    int* final = new int[req.map.data.size()];
+    bool success = PathCalculator::RTTCONNECT(req.map, req.start_pose, req.goal_pose, resp.path, final);
+    if(success)
+    {
+        tracReal.path = resp.path;
+        tracRealGrow.path = PathCalculator::SmoothPath(tracReal.path);
+        PathCalculator::RTTPost(req.map, resp.path, final);
+        tracVer.path = resp.path;
+        resp.path = PathCalculator::SmoothPath(resp.path);
+        real = true;
+    }
+    delete[] final;    
     return success;
 }
 
@@ -62,7 +84,8 @@ int main(int argc, char** argv)
     bool _calculate_diagonal_paths = false;
     ros::ServiceServer srvPathWaveFront = n.advertiseService("path_calculator/wave_front_from_map", callbackWaveFrontFromMap);
     ros::ServiceServer srvPathAStar     = n.advertiseService("path_calculator/a_star_from_map"    , callbackAStarFromMap    );
-    ros::ServiceServer srvPathRRT       = n.advertiseService("path_calculator/rrt_from_map"       , callbackRRT             );
+    ros::ServiceServer srvPathRRTExt    = n.advertiseService("path_calculator/rrt_ext_from_map"   , callbackRRTExt          );
+    ros::ServiceServer srvPathRRTCon    = n.advertiseService("path_calculator/rrt_con_from_map"   , callbackRRTConnect      );
     pubMapGrown = n.advertise<nav_msgs::OccupancyGrid>("path_calculator/grown_map", 1);
     pubMapReal = n.advertise<nav_msgs::Path>("/navigation/mvn_pln/path", 1);
     pubMapRealGrow = n.advertise<nav_msgs::Path>("/navigation/mvn_pln/path_grow", 1);

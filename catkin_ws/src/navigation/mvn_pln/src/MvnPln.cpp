@@ -46,8 +46,9 @@ void MvnPln::initROSConnection(ros::NodeHandle* nh)
     this->subCollisionPoint = nh->subscribe("/navigation/obs_avoid/collision_point", 10, &MvnPln::callbackCollisionPoint, this);
 
     this->cltGetMap = nh->serviceClient<nav_msgs::GetMap>("/navigation/localization/static_map");
-    this->cltPathFromMapAStar = nh->serviceClient<navig_msgs::PathFromMap>("/navigation/path_planning/path_calculator/a_star_from_map");//llamada al metodo
-    this->cltPathFromMapRRT = nh->serviceClient<navig_msgs::PathFromMap>("/navigation/path_planning/path_calculator/rrt_from_map");
+    this->cltPathFromMapAStar = nh->serviceClient<navig_msgs::PathFromMap>("/navigation/path_planning/path_calculator/a_star_from_map");
+    this->cltPathFromMapRRTExt = nh->serviceClient<navig_msgs::PathFromMap>("/navigation/path_planning/path_calculator/rrt_ext_from_map");
+    this->cltPathFromMapRRTConnect = nh->serviceClient<navig_msgs::PathFromMap>("/navigation/path_planning/path_calculator/rrt_con_from_map");
     this->cltGetRgbdWrtRobot = nh->serviceClient<point_cloud_manager::GetRgbd>("/hardware/point_cloud_man/get_rgbd_wrt_robot");
     tf_listener.waitForTransform("map", "base_link", ros::Time(0), ros::Duration(5.0));
 }
@@ -590,8 +591,12 @@ bool MvnPln::planPath(float startX, float startY, float goalX, float goalY, nav_
         success = this->cltPathFromMapAStar.call(srvPathFromMap);
         break;
     case 1: //navig_msgs::PlanPath::RRT:
-        success = this->cltPathFromMapRRT.call(srvPathFromMap);
+        success = this->cltPathFromMapRRTExt.call(srvPathFromMap);
         break;
+    case 2:
+        success = this->cltPathFromMapRRTConnect.call(srvPathFromMap);
+        break;
+
     default:
         break;
     }

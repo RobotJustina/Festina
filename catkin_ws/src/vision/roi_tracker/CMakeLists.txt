@@ -54,5 +54,5 @@ target_link_libraries(
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
   dlib::dlib
-  #/usr/local/lib/libopencv_tracking.so.3.3.1
+  #/usr/local/lib/libopencv_tracking.so.3.4.8
 )

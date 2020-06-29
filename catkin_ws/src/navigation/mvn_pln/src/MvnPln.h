@@ -82,7 +82,8 @@ private:
     //Ros stuff for path planning
     ros::ServiceClient cltGetMap;
     ros::ServiceClient cltPathFromMapAStar; //Path calculation using only the occupancy grid
-    ros::ServiceClient cltPathFromMapRRT;
+    ros::ServiceClient cltPathFromMapRRTExt;
+    ros::ServiceClient cltPathFromMapRRTConnect;
     ros::ServiceClient cltGetRgbdWrtRobot;
     tf::TransformListener tf_listener;
 

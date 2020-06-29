@@ -1,6 +1,7 @@
 #include "PathCalculator.h"
 
 bool PathCalculator::calculateDiagonalPaths = false;
+int mapDim, q_new, origin, maxDim;
 
 bool PathCalculator::WaveFront(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& startPose, geometry_msgs::Pose& goalPose,
                                nav_msgs::Path& resultPath)
@@ -176,7 +177,7 @@ bool PathCalculator::WaveFront(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose
 }
 
 bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& startPose, geometry_msgs::Pose& goalPose,
-                         nav_msgs::Path& resultPath)
+                           nav_msgs::Path& resultPath)
 {
     //HAY UN MEGABUG EN ESTE ALGORITMO PORQUE NO ESTOY TOMANDO EN CUENTA QUE EN LOS BORDES DEL
     //MAPA NO SE PUEDE APLICAR CONECTIVIDAD CUATRO NI OCHO. FALTA RESTRINGIR EL RECORRIDO A LOS BORDES MENOS UNO.
@@ -228,7 +229,7 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
     for(int i=0; i< map.data.size(); i++)
     {
         isKnown[i] = map.data[i] > 40 || map.data[i] < 0;
-        g_values[i] = INT_MAX;
+        g_values[i] = INT_MAX;//2147483647
         f_values[i] = INT_MAX;
         previous[i] = -1;
         visited[i] = map.data[i] > 40 || map.data[i] < 0;
@@ -278,7 +279,7 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
                 h_value = (int)(sqrt(h_value_x*h_value_x + h_value_y*h_value_y));
             }
             else
-                h_value = abs((neighbors[i]%map.info.width) - goalCellX) + abs((neighbors[i]/map.info.width) - goalCellY);
+                h_value = (fabs((neighbors[i]%map.info.width) - goalCellX) + fabs((neighbors[i]/map.info.width) - goalCellY));            
             //std::cout<<"n:"<<neighbors[i]<<" nX: "<<neighborX<<" nY: "<<neighborY<<" g: "<<g_value<<" h: "<<h_value<<" f: "<<(h_value+g_value)<< std::endl;
             if(g_value < g_values[neighbors[i]])
             {
@@ -351,9 +352,11 @@ bool PathCalculator::AStar(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& st
     std::cout << "PathCalculator.->Resulting path by A* has " << resultPath.poses.size() << " points." << std::endl;
     return true;
 }
-bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& startPose, geometry_msgs::Pose& goalPose,nav_msgs::Path& resultPath, int*&  final)
+
+bool PathCalculator::RTTEXT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& startPose, geometry_msgs::Pose& goalPose,nav_msgs::Path& resultPath, 
+                            int*&  finalLink)
 {
-    std::cout << "PathCalculator.-> Calculating by RRt* from " << startPose.position.x << "  ";
+    std::cout << "PathCalculator.-> Calculating by RRT-Ext* from " << startPose.position.x << "  ";
     std::cout << startPose.position.y << "  to " << goalPose.position.x << "  " << goalPose.position.y << std::endl;
     int startCellX = (int)((startPose.position.x - map.info.origin.position.x)/map.info.resolution);
     int startCellY = (int)((startPose.position.y - map.info.origin.position.y)/map.info.resolution);
@@ -362,27 +365,8 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
     int startCell = startCellY * map.info.width + startCellX;
     int goalCell = goalCellY * map.info.width + goalCellX;
 
-
-    std::cout << "X1: "  << startPose.position.x << std::endl;
-    std::cout << "Y1:"  << startPose.position.y << std::endl;
-    //std::cout << "Centro del Mapa en X * Resolution: "  << map.info.origin.position.x << std::endl;
-
-    //std::cout << "Centro del Mapa en Y * Resolution: "  << map.info.origin.position.y << std::endl;
-
-    //std::cout << "Map Resolution: "  << map.info.resolution << std::endl;
-
-    std::cout << "X2: "  << goalPose.position.x << std::endl;
-    std::cout << "Y2: "  << goalPose.position.y << std::endl;
-
-    std::cout << "Celda Inicial: "  << startCell << std::endl;
-    std::cout << "Celda Final: "  << goalCell << std::endl;
-    
-
-    //std::cout << "Dimenciones en celdas del Mapa:"  << map.info.width << std::endl; //4000
-
-
     map = PathCalculator::GrowObstacles(map, 0.15);//new map
-    //???
+
     if(map.data[goalCell] > 40 || map.data[goalCell] < 0)
     {
         std::cout << "PathCalculator.->Cannot calculate path: goal point is inside occupied space: "<< int(map.data[goalCell]) << std::endl;
@@ -394,346 +378,100 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
         return false;
     }
 
-    //std::cout << "Creating arrays for dijkstra data" << std::endl;
     bool* isKnown = new bool[map.data.size()];//conocida
-    int* neighbors = new int[map.data.size()];
-    int* nearnessToObstacles = new int[map.data.size()];
 
-    int* arbol1 = new int[map.data.size()];
-    int* arbol2 = new int[map.data.size()];
+    int* initialTree = new int[map.data.size()];
+    int* finalTree = new int[map.data.size()];
+    int* initialRoute = new int[map.data.size()];
+    int* finalRoute = new int[map.data.size()];
 
-
-    //std::cout<< "Celda final2 ocupada?? " << map.data[goalCell] << std::endl;
-    std::vector<int> visitedAndNotKnown;
+    mapDim = map.info.width;
+    maxDim = map.data.size() - 1;
     
     int currentCell = startCell;//Pos Inicio
-
-    //std::cout << "Initializing aux arrays for dijkstra" << std::endl;
-    //std::cout << "Map data size: " << map.data.size() << std::endl;
-    
-
-    PathCalculator::NearnessToObstacles(map, 0.6, nearnessToObstacles);//)
-
-
-    /*{
-        std::cout << "PathCalculator.->Cannot calculate nearness to obstacles u.u" << std::endl;
-        return false;
-    }//*/
 
     for(int i=0; i< map.data.size(); i++)
     {
         isKnown[i] = map.data[i] > 40 || map.data[i] < 0;
-        arbol1[i] = 0;
-        arbol2[i] = 0;
-
+        initialTree[i] = 0;
+        finalTree[i] = 0;
     }
 
-    for(int i=0; i< 8; i++)
-    {
-        neighbors[i] = 0;
-    }
-
-    int nn1 = 0;
-    int nn2 = 0;
     isKnown[currentCell] = true;
+
     int attempts = 0;
-    int ale = 0;
-    int iteraciones = map.data.size();
-    arbol1[0] = currentCell;//iniciando en la posicion actual
-    arbol2[0] = goalCell;//iniciando en la posicion final
-    int block = 0;
-    int ciclo1 = 1;
-    int ciclo2 = 1;
-    int p1 = 0;
-    int p2 = 0;
+    int q_rand = 0;
+    int iterations = map.data.size();
+    initialTree[0] = currentCell;//iniciando en la posicion actual
+    initialTree[maxDim] = 1;
+    finalTree[0] = goalCell;//iniciando en la posicion final
+    finalTree[maxDim] = 1;
     srand(time(NULL));
-    bool cruzo = false;
-    int origin1 = 0;
-    int origin2 = 0;
-    int goalCellF = goalCell;
-    int rango = 3;
-    std::cout << "Dis F->" << PathCalculator::Distance(currentCell,goalCell,map) << std::endl;
+    bool cross = false;
+    int NumVer = 0;
 
-
-    while(!cruzo && attempts < iteraciones)
+    while(!cross && attempts < iterations)
     {
-        ale = rand()%map.data.size();
-        nn1 = arbol1[0];
-        nn2 = arbol2[0];
-
-        for(int i=0; i<ciclo1; i++)
+        q_rand = rand()%map.data.size();
+        
+        if(PathCalculator::Extends(initialTree, q_rand, finalTree, isKnown) == 0)
         {
-            p1 = arbol1[i];
-            if(PathCalculator::Distance(p1,ale,map) < PathCalculator::Distance(nn1,ale,map))
-                nn1 = p1;
-        }//Obteniendo el nodo del arbol mas cercano al punto aleatorio
-
-        currentCell = nn1;
-
-        neighbors[0] = currentCell - map.info.width - 1;//pos actual
-        neighbors[1] = currentCell - map.info.width;
-        neighbors[2] = currentCell - map.info.width + 1;
-        neighbors[3] = currentCell - 1;
-        neighbors[4] = currentCell + 1;
-        neighbors[5] = currentCell + map.info.width - 1;
-        neighbors[6] = currentCell + map.info.width;
-        neighbors[7] = currentCell + map.info.width + 1;
-
-        block = PathCalculator::Celda(currentCell,ale,map);
-
-        if(!isKnown[neighbors[block]])
-        {
-            //if(!isKnown[neighbors[block]-rango])// && !isKnown[neighbors[block]+rango])// && !isKnown[neighbors[block]-rango*map.info.width] && !isKnown[neighbors[block]+rango*map.info.width])
-            {
-                //std::cout << "Celda[" << ciclo1 << "]->"<< neighbors[block] << std::endl;            
-                arbol1[ciclo1] = neighbors[block];
-                for(int l=0; l<ciclo2; l++)
-                {
-                    if((PathCalculator::Distance(neighbors[block],arbol2[l],map) < 2.0) && (!cruzo))
-                    {
-                        //std::cout << "Acept1" << std::endl;
-                        cruzo = true;
-                        origin1 = neighbors[block];
-                        origin2 = arbol2[l];
-                        //std::cout << "O1->" << origin1 << " O2->"<< origin2 << std::endl;
-                    }
-                }
-                ciclo1 ++;
-            }            
+            cross =  true;
+            break;
         }
-
-        isKnown[neighbors[block]] = true;
-
-        for(int i=0; i<ciclo2; i++)
+        else if(!cross)
         {
-            p2 = arbol2[i];
-            if(PathCalculator::Distance(p2,ale,map) < PathCalculator::Distance(nn2,ale,map))
-                nn2 = p2;
-        }
-
-        goalCell = nn2;
-
-        neighbors[0] = goalCell - map.info.width - 1;//pos actual
-        neighbors[1] = goalCell - map.info.width;
-        neighbors[2] = goalCell - map.info.width + 1;
-        neighbors[3] = goalCell - 1;
-        neighbors[4] = goalCell + 1;
-        neighbors[5] = goalCell + map.info.width - 1;
-        neighbors[6] = goalCell + map.info.width;
-        neighbors[7] = goalCell + map.info.width + 1;
-
-        block = PathCalculator::Celda(goalCell,ale,map);
-
-        if(!isKnown[neighbors[block]])
-        {
-            //if(!isKnown[neighbors[block]-rango])// && !isKnown[neighbors[block]+rango])// && !isKnown[neighbors[block]-rango*map.info.width] && !isKnown[neighbors[block]+rango*map.info.width])
+            if(PathCalculator::Extends(finalTree, q_new, initialTree, isKnown) == 0)
             {
-                arbol2[ciclo2] = neighbors[block];
-                for(int l=0; l<ciclo1; l++)
-                {
-                    if((PathCalculator::Distance(neighbors[block],arbol1[l],map) < 5.0) && (!cruzo))
-                    {
-                        //std::cout << "Acept2" << std::endl;
-                        cruzo = true;
-                        origin1 = arbol1[l];
-                        origin2 = neighbors[block];
-                        //std::cout << "O1->" << origin1 << " O2->"<< origin2 << std::endl;
-                    }
-                }
-                ciclo2 ++;
+                cross = true;
+                break;
             }
         }
-        isKnown[neighbors[block]] = true;        
+        PathCalculator::Change(initialTree, finalTree);
         attempts++; 
-    }
+    } 
+
+    if(initialTree[0] != currentCell)
+    {
+        PathCalculator::Change(initialTree, finalTree);
+    }//*/
 
     for(int i=0; i< map.data.size(); i++)
     {
-        isKnown[arbol1[i]] = false;
-        isKnown[arbol2[i]] = false;
+        isKnown[initialTree[i]] = false;
+        isKnown[finalTree[i]] = false;
     }
 
     std::cout << "Iteraciones->"<< attempts << std::endl;
 
-    //std::cout << "O1->" << origin1 << " O2->"<< origin2 << std::endl;
-    
-    bool search = false;
-    int r,u,s,a;
-    int* ruta1 = new int[map.data.size()];
-    int* ruta2 = new int[map.data.size()];
-    int cont = 0;
-
-    while(!search && cruzo)// && cont < 35)
+    if(cross)
     {
-        for(int v=0; v<ciclo1 + ciclo2; v++)
+        int initialPath = PathCalculator::Path(initialRoute, initialTree, origin);
+
+        int finalPath = PathCalculator::Path(finalRoute, finalTree, origin);
+
+        int connect = finalPath;
+
+        NumVer = initialPath  + finalPath;    
+        
+        for(int l = 1; l < finalPath + 1; l++)
         {
-            ruta1[v] = 0;
+            initialRoute[initialPath + l] = finalRoute[connect-1];
+            connect --;
         }
-        ruta1[0] = arbol1[0];
-        r = 1;
-        u = ruta1[0];
-        for(int v=1; v<ciclo1 + ciclo2-2; v++)
+        for(int k = 0; k < NumVer; k++)
         {
-            s = arbol1[v];
-            if(PathCalculator::Distance(u,s,map) < 1.415)
-            {
-                ruta1[r] = arbol1[v];
-                u = ruta1[r];
-                r++;
-                a = v;
-            }
+            finalLink[k] = initialRoute[k];
         }
-        if(ruta1[r-1] == origin1)
-        {
-            //std::cout << "Funciona" << std::endl;
-            search = true;
-        }
-        else
-            arbol1[a] = -1;
-        cont ++;
-        //std::cout << " Bucle??" << std::endl;
     }
-
-    int f1 = r;
-
-    ruta1[f1] = origin2;
-    
-    search = false;
-    cont = 0;
-
-    while(!search && cruzo)// && cont < 15)
-    {
-        for(int v=0; v<ciclo2; v++)
-        {
-            ruta2[v] = 0;
-        }
-        ruta2[0] = arbol2[0];
-        r = 1;
-        u = ruta2[0];
-        for(int v=1; v<ciclo2; v++)
-        {
-            s = arbol2[v];
-            if(PathCalculator::Distance(u,s,map) < 1.415)
-            {
-                ruta2[r] = arbol2[v];
-                u = ruta2[r];
-                r++;
-                a = v;
-            }
-        }
-        if(ruta2[r-1] == origin2)
-        {
-            //std::cout << "Funciona" << std::endl;
-            search = true;
-        }
-        else
-            arbol2[a] = 0;
-
-        cont++;
-    }
-
-    int f2 = r;
-    int f21 = r;
-
-    int NumVer = f1+f2;
-    
-    
-    for(int l=1; l<f2+1; l++)
-    {
-        ruta1[f1+l] = ruta2[f21-1];
-        f21 --;
-    }
-    for(int k=0; k<NumVer; k++)
-    {
-        final[k] = ruta1[k];
-    }
-
-    //std::cout << "Final Cell U->" << ruta1[NumVer] << std::endl;
-    /*
-    
-    int v1 = ruta1[0];
-    r = 0;
-    int final[NumVer];
-    final[r] = v1;
-    int v2 = ruta1[NumVer];
-    r ++;
-    int more = 1;
-    int avan = 0;
-    int verA = 0;
-    for(int l=1; l<f1+f2; l++)
-    {
-        final[l] = 0;
-    }
-    std::cout << "Vertice->" << NumVer << std::endl;
-    //std::cout << "v1->" << v1 << " v2->" << v2 << std::endl;
-
-    while((final[more-1] != ruta1[f1+f2]) &&  cruzo)
-    { 
-        //std::cout << "v1->" << v1 << " v2->" << v2 << std::endl;
-        if(PathCalculator::Line( v1, v2, map, isKnown) || PathCalculator::Distance(v1,v2,map) < 1.415)
-        {            
-            final[r] = v2;
-            r++;
-            //std::cout << "Final Cell Ac->" << v2 << std::endl;
-            for(int ve=verA; ve<f1+f2; ve++)
-            {                
-                final[r] = ruta1[ve];
-                r++;
-            }
-            verA = NumVer;
-            v1 = ruta1[verA];
-            NumVer = f1+f2;
-            v2 = ruta1[NumVer];
-            more ++;
-            for(int l=more; l<f1+f2; l++)
-            {
-                final[l] = 0;
-                r = more;
-            }
-        }
-        else
-        {
-            if((NumVer-verA) > 10 )
-            {
-                NumVer = int((NumVer+verA)/2);
-                //verA = NumVer;
-
-                //std::cout << "Vertice 1->"<< NumVer<< std::endl;
-            }
-            else
-            {
-                NumVer --;
-                //std::cout << "Vertice 2->"<< NumVer<< std::endl;
-            }
-            v2 = ruta1[NumVer];
-            //NumVer += verA; 
-            //std::cout << "\nCambio de vertice " << v2 << std::endl;
-            //std::cout << "V1->" << v1 << " V2->" << v2 << std::endl;
-        }
-        avan ++;
-    }
-
-    //std::cout << "Final Cell Ac->" << final[more-1] << std::endl;
-
-    std::cout << "NumVer->" << more << std::endl;
-    NumVer = more;
-    /*for(int b=0; b<more; b++)
-    {
-        std::cout << "Final Cell->" << final[b] << std::endl;
-    }//*/
-
-
-
-    //std::cout << "PathCalculator.->A* finished after " << attempts << " attempts" << std::endl;
-    if(!cruzo)
+    if(!cross)
     {
         std::cout << "PathCalculator.-> Cannot find path to goal point by RRT :'( ->" << std::endl;
         return false;
     }
-    //std::cout << "PathCalculator.->Total path cost: " << g_values[goalCell] << std::endl;
 
     geometry_msgs::PoseStamped p;
-    currentCell = goalCellF; //Celda Final
+    currentCell = goalCell; 
     p.pose.position.x = (currentCell % map.info.width)*map.info.resolution + map.info.origin.position.x;
     p.pose.position.y = (currentCell / map.info.width)*map.info.resolution + map.info.origin.position.y;
     p.pose.orientation.w = 1;
@@ -742,57 +480,186 @@ bool PathCalculator::RTT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& star
     resultPath.poses.clear();
     resultPath.poses.push_back(p);
 
-    int OneVer=NumVer;
-
-    while(OneVer > 0)
+    while(NumVer > 0)
     {
-        currentCell = ruta1[OneVer-1];   
-        //std::cout<<"Camino de celdas-> "<< currentCell << std::endl;      
+        currentCell = initialRoute[NumVer-1]; 
         p.pose.position.x = (currentCell % map.info.width)*map.info.resolution + map.info.origin.position.x;
         p.pose.position.y = (currentCell / map.info.width)*map.info.resolution + map.info.origin.position.y;
-        //std::cout<<"Camino de celdas-> "<< p.pose.position.x<< " , " << p.pose.position.y << std::endl; 
         resultPath.poses.insert(resultPath.poses.begin(), p);
-        //std::cout<<"Pos-> "<< p.pose.position << std::endl; 
-        OneVer--;
+        NumVer--;
     }
 
     delete[] isKnown;
-    delete[] neighbors;
-    delete[] ruta1;
-    delete[] ruta2;
-    delete[] nearnessToObstacles;
-    delete[] arbol1;
-    delete[] arbol2;
-
+    delete[] initialRoute;
+    delete[] finalRoute;
+    delete[] initialTree;
+    delete[] finalTree;
 
     std::cout << "PathCalculator.->Resulting path by RRT* has " << resultPath.poses.size()-2 << " points." << std::endl;
-    //this->final = ruta1;
     return true;
 }
 
+bool PathCalculator::RTTCONNECT(nav_msgs::OccupancyGrid& map, geometry_msgs::Pose& startPose, geometry_msgs::Pose& goalPose,nav_msgs::Path& resultPath, 
+                                int*&  finalLink)
+{
+    std::cout << "PathCalculator.-> Calculating by RRT-Connect* from " << startPose.position.x << "  ";
+    std::cout << startPose.position.y << "  to " << goalPose.position.x << "  " << goalPose.position.y << std::endl;
+    int startCellX = (int)((startPose.position.x - map.info.origin.position.x)/map.info.resolution);
+    int startCellY = (int)((startPose.position.y - map.info.origin.position.y)/map.info.resolution);
+    int goalCellX = (int)((goalPose.position.x - map.info.origin.position.x)/map.info.resolution);
+    int goalCellY = (int)((goalPose.position.y - map.info.origin.position.y)/map.info.resolution);
+    int startCell = startCellY * map.info.width + startCellX;
+    int goalCell = goalCellY * map.info.width + goalCellX;
 
-void PathCalculator::RTTVer(nav_msgs::OccupancyGrid& map, nav_msgs::Path& resultPath, int*& newRuta)
+    map = PathCalculator::GrowObstacles(map, 0.15);//new map
+
+    if(map.data[goalCell] > 40 || map.data[goalCell] < 0)
+    {
+        std::cout << "PathCalculator.->Cannot calculate path: goal point is inside occupied space: "<< int(map.data[goalCell]) << std::endl;
+        return false;
+    }
+    if(map.data[startCell] > 40 || map.data[startCell] < 0)
+    {
+        std::cout << "PathCalculator.-> Cannot calculate path: start point is inside occupied space" << map.data[startCell] << std::endl;
+        return false;
+    }
+
+    bool* isKnown = new bool[map.data.size()];//conocida
+
+    int* initialTree = new int[map.data.size()];
+    int* finalTree = new int[map.data.size()];
+    int* initialRoute = new int[map.data.size()];
+    int* finalRoute = new int[map.data.size()];
+
+    mapDim = map.info.width;
+    maxDim = map.data.size() - 1;
+    
+    int currentCell = startCell;//Pos Inicio
+
+    for(int i=0; i< map.data.size(); i++)
+    {
+        isKnown[i] = map.data[i] > 40 || map.data[i] < 0;
+        initialTree[i] = 0;
+        finalTree[i] = 0;
+    }
+
+    isKnown[currentCell] = true;
+
+    int attempts = 0;
+    int q_rand = 0;
+    int iterations = map.data.size();
+    initialTree[0] = currentCell;//iniciando en la posicion actual
+    initialTree[maxDim] = 1;
+    finalTree[0] = goalCell;//iniciando en la posicion final
+    finalTree[maxDim] = 1;
+    srand(time(NULL));
+    bool cross = false;
+    int NumVer = 0;
+
+    while(!cross && attempts < iterations)
+    {
+        q_rand = rand()%map.data.size();
+        
+        if(PathCalculator::Connect(initialTree, q_rand, finalTree, isKnown) == 0)
+        {
+            cross =  true;
+            break;
+        }
+        else if(!cross)
+        {
+            if(PathCalculator::Connect(finalTree, q_new, initialTree, isKnown) == 0)
+            {
+                cross = true;
+                break;
+            }
+        }
+        PathCalculator::Change(initialTree, finalTree);
+        attempts++; 
+    } 
+
+    if(initialTree[0] != currentCell)
+    {
+        PathCalculator::Change(initialTree, finalTree);
+    }//*/
+
+    for(int i=0; i< map.data.size(); i++)
+    {
+        isKnown[initialTree[i]] = false;
+        isKnown[finalTree[i]] = false;
+    }
+
+    std::cout << "Iteraciones->"<< attempts << std::endl;
+
+    if(cross)
+    {
+        int initialPath = PathCalculator::Path(initialRoute, initialTree, origin);
+
+        int finalPath = PathCalculator::Path(finalRoute, finalTree, origin);
+
+        int connect = finalPath;
+
+        NumVer = initialPath  + finalPath;    
+        
+        for(int l = 1; l < finalPath + 1; l++)
+        {
+            initialRoute[initialPath + l] = finalRoute[connect-1];
+            connect --;
+        }
+        for(int k = 0; k < NumVer; k++)
+        {
+            finalLink[k] = initialRoute[k];
+        }
+    }
+    if(!cross)
+    {
+        std::cout << "PathCalculator.-> Cannot find path to goal point by RRT :'( ->" << std::endl;
+        return false;
+    }
+
+    geometry_msgs::PoseStamped p;
+    currentCell = goalCell; 
+    p.pose.position.x = (currentCell % map.info.width)*map.info.resolution + map.info.origin.position.x;
+    p.pose.position.y = (currentCell / map.info.width)*map.info.resolution + map.info.origin.position.y;
+    p.pose.orientation.w = 1;
+    p.header.frame_id = "map";
+    resultPath.header.frame_id = "map";
+    resultPath.poses.clear();
+    resultPath.poses.push_back(p);
+
+    while(NumVer > 0)
+    {
+        currentCell = initialRoute[NumVer-1]; 
+        p.pose.position.x = (currentCell % map.info.width)*map.info.resolution + map.info.origin.position.x;
+        p.pose.position.y = (currentCell / map.info.width)*map.info.resolution + map.info.origin.position.y;
+        resultPath.poses.insert(resultPath.poses.begin(), p);
+        NumVer--;
+    }
+
+    delete[] isKnown;
+    delete[] initialRoute;
+    delete[] finalRoute;
+    delete[] initialTree;
+    delete[] finalTree;
+
+    std::cout << "PathCalculator.->Resulting path by RRT* has " << resultPath.poses.size()-2 << " points." << std::endl;
+    return true;
+}
+
+void PathCalculator::RTTPost(nav_msgs::OccupancyGrid& map, nav_msgs::Path& resultPath, int*& newRuta)
 {
     bool* isKnown = new bool[map.data.size()];//conocida
     int* ruta = new int[map.data.size()];
-    for(int i=0; i< map.data.size(); i++)
+    for(int i=0; i < map.data.size(); i++)
     {
         isKnown[i] = map.data[i] > 40 || map.data[i] < 0;
         ruta[i] = newRuta[i];
     }
-    for(int i=0; i<resultPath.poses.size() + 1; i++)
-    {
-        isKnown[ruta[i]] = false;
-        //std::cout << "Ruta->" << ruta[i] << std::endl;
-    }
 
     int valor = resultPath.poses.size() - 2;
     int valorF = resultPath.poses.size() - 2;
-    //std::cout << "Ruta->" << ruta[valor] << std::endl;
     int NumVer = valor;
     int more = valor;
     int final[NumVer];
-    //std::cout << "Vertices->" << NumVer << std::endl;
 
     for(int ciclo=0; ciclo<2; ciclo++)
     {
@@ -800,25 +667,22 @@ void PathCalculator::RTTVer(nav_msgs::OccupancyGrid& map, nav_msgs::Path& result
         NumVer = more;
         int v1 = ruta[0];
         int r = 0;
-        //int final[NumVer];
         final[r] = v1;
         int v2 = ruta[NumVer];
         r ++;
         more = 1;
-        int verA = 0;
+        int verA = NumVer;
         for(int l=1; l<valor; l++)
         {
             final[l] = 0;
         }
         while((final[more-1] != ruta[valor]))
         { 
-            //std::cout << "v1->" << v1 << " v2->" << v2 << std::endl;
-            if(PathCalculator::Line( v1, v2, map, isKnown) || PathCalculator::Distance(v1,v2,map) < 2.15)
+            if(PathCalculator::Line( v1, v2, map, isKnown) || PathCalculator::Distance(v1,v2) < 2.15)
             {            
                 final[r] = v2;
                 r++;
-                //std::cout << "Final Cell Ac->" << v2 << std::endl;
-                for(int ve=verA; ve<valor; ve++)
+                for(int ve = verA; ve < valor; ve++)
                 {                
                     final[r] = ruta[ve];
                     r++;
@@ -828,10 +692,10 @@ void PathCalculator::RTTVer(nav_msgs::OccupancyGrid& map, nav_msgs::Path& result
                 NumVer = valor;
                 v2 = ruta[NumVer];
                 more ++;
+                r = more;
                 for(int l=more; l<valor; l++)
                 {
                     final[l] = 0;
-                    r = more;
                 }
             }
             else
@@ -839,34 +703,21 @@ void PathCalculator::RTTVer(nav_msgs::OccupancyGrid& map, nav_msgs::Path& result
                 if((NumVer-verA) > 10 )
                 {
                     NumVer = int((NumVer+verA)/2);
-                    //verA = NumVer;
-
-                    //std::cout << "Vertice 1->"<< NumVer<< std::endl;
                 }
                 else
                 {
                     NumVer --;
-                    //std::cout << "Vertice 2->"<< NumVer<< std::endl;
                 }
                 v2 = ruta[NumVer];
-                //NumVer += verA; 
-                //std::cout << "\nCambio de vertice " << v2 << std::endl;
-                //std::cout << "V1->" << v1 << " V2->" << v2 << std::endl;
             }
-            //avan ++;
         }    
         for(int j=0; j<more+10; j++)
         {
             ruta[j] = final[j];
         }
-
         more --;
-    //std::cout << "Vertices1->" << valor << std::endl;
-    //std::cout << "Vertices2->" << more << std::endl;
     }
-    //std::cout << "Final Cell Ac->" << final[more-1] << std::endl;
     std::cout << "PathCalculator.->Resulting path by RRT* has " << more+1 << " points." << std::endl;
-    //std::cout << "Vertices Pos->" << more << std::endl;
     int currentCell;
     geometry_msgs::PoseStamped p;
     p.pose.position.x = resultPath.poses[valorF].pose.position.x;
@@ -876,19 +727,14 @@ void PathCalculator::RTTVer(nav_msgs::OccupancyGrid& map, nav_msgs::Path& result
     resultPath.poses.clear();
     resultPath.poses.push_back(p);
 
-    //std::cout << "X->" << resultPath.poses[valor].pose.position.x <<" Y->" << resultPath.poses[valor].pose.position.y <<  std::endl;
-
-    int OneVer=more;//f1+f2;
+    int OneVer = more;
 
     while(OneVer > 0)
     {
-        currentCell = final[OneVer-1];   
-        //std::cout<<"Camino de celdas-> "<< currentCell << std::endl;      
+        currentCell = final[OneVer-1];        
         p.pose.position.x = (currentCell % map.info.width)*map.info.resolution + map.info.origin.position.x;
         p.pose.position.y = (currentCell / map.info.width)*map.info.resolution + map.info.origin.position.y;
-        //std::cout<<"Camino de celdas-> "<< p.pose.position.x<< " , " << p.pose.position.y << std::endl; 
         resultPath.poses.insert(resultPath.poses.begin(), p);
-        //std::cout<<"Pos-> "<< p.pose.position << std::endl; 
         OneVer--;
     } 
     delete[] isKnown;
@@ -896,7 +742,6 @@ void PathCalculator::RTTVer(nav_msgs::OccupancyGrid& map, nav_msgs::Path& result
 
     //return Path;
 }
-
 
 nav_msgs::OccupancyGrid PathCalculator::GrowObstacles(nav_msgs::OccupancyGrid& map, float growDist)
 {
@@ -1048,43 +893,158 @@ nav_msgs::Path PathCalculator::SmoothPath(nav_msgs::Path& path, float weight_dat
     return newPath;
 }
 
-int PathCalculator::Celda(int nn, int rand, nav_msgs::OccupancyGrid& map)
+int PathCalculator::NewCell(int currentCell, int q_rand)
 {
-    float nx = (nn % map.info.width)*map.info.resolution + map.info.origin.position.x;
-    float ny = (nn / map.info.width)*map.info.resolution + map.info.origin.position.y;
-    float rx = (rand % map.info.width)*map.info.resolution + map.info.origin.position.x;
-    float ry = (rand / map.info.width)*map.info.resolution + map.info.origin.position.y;
-    float theta = atan2(ry-ny,rx-nx);
-    //std::cout << "Angulo->" << theta << std::endl;
-    //std::cout << "Pi->" << M_PI << std::endl;//3.14159
+    float cx = (currentCell % mapDim);
+    float cy = (currentCell / mapDim);
+    float qx = (q_rand % mapDim);
+    float qy = (q_rand / mapDim);
+    float theta = atan2(qy-cy,qx-cx);
 
     if(-M_PI/8 <= theta && theta < M_PI/8)
-        return 4;
+        return currentCell + 1;
     else if(M_PI/8 <= theta && theta < ((3*M_PI)/8))
-        return 7;
+        return currentCell + mapDim + 1;
     else if(((3*M_PI)/8) <= theta && theta < ((5*M_PI)/8))
-        return 6;
+        return currentCell + mapDim;
     else if(((5*M_PI)/8) <= theta && theta <= ((7*M_PI)/8))
-        return 5;
+        return currentCell + mapDim - 1;
     else if(((-3*M_PI)/8) <= theta && theta < -M_PI/8)
-        return 2;
+        return currentCell - mapDim + 1;
     else if(((-5*M_PI)/8) <= theta && theta < ((-3*M_PI)/8))
-        return 1;
+        return currentCell - mapDim;
     else if(((-7*M_PI)/8) <= theta && theta < ((-5*M_PI)/8))
-        return 0;
+        return currentCell - mapDim - 1;
     else
-        return 3;
+        return currentCell - 1;
+}
+int PathCalculator::NearCell(int q_rand, int*& resultTree, int travel)
+{
+    int nodo = resultTree[0];
+    for(int i = 0;i < travel; i++ )
+    {
+        if(PathCalculator::Distance(resultTree[i],q_rand) < PathCalculator::Distance(nodo,q_rand))
+            nodo = resultTree[i];
+    }
+    return nodo;
 }
 
-float PathCalculator::Distance(int nn, int rand, nav_msgs::OccupancyGrid& map)
+float PathCalculator::Distance(int q_new, int q_rand)
 {
-    float nx = (nn % map.info.width)*map.info.resolution + map.info.origin.position.x;
-    float ny = (nn / map.info.width)*map.info.resolution + map.info.origin.position.y;
-    float rx = (rand % map.info.width)*map.info.resolution + map.info.origin.position.x;
-    float ry = (rand / map.info.width)*map.info.resolution + map.info.origin.position.y;
-    float dis = sqrt((nx-rx)*(nx-rx)+(ny-ry)*(ny-ry));
-    //std::cout << "Dis->" << dis << std::endl;
-    return dis/map.info.resolution;
+    float qx = (q_new % mapDim); 
+    float qy = (q_new / mapDim); 
+    float rx = (q_rand % mapDim); 
+    float ry = (q_rand / mapDim); 
+    return fabs(qx - rx) + fabs(qy - ry);
+}
+
+bool PathCalculator::Link(int q_new,int*& Tree)
+{
+    bool link = false;
+    int travel = Tree[maxDim];
+    for(int i = 0;i < travel-1;i++)
+    {
+        if(PathCalculator::Distance(Tree[i], q_new) < 2.0)
+        {
+            link = true;
+            Tree[i+1] = q_new;
+            break;
+        }
+    }
+    return link;
+}
+
+int PathCalculator::Extends(int*& resultTree, int q_rand, int*& auxTree,  bool*& isKnown)
+{
+    int travel = resultTree[maxDim];
+    int q_near = PathCalculator::NearCell(q_rand, resultTree, travel);
+    q_new = PathCalculator::NewCell(q_near, q_rand);
+    if(!isKnown[q_new])
+    {
+        resultTree[travel] = q_new;
+        travel ++;
+        resultTree[maxDim] = travel;
+        isKnown[q_new] = true; 
+        if(PathCalculator::Link(q_new,auxTree))
+        {
+            origin = q_new;
+            return 0;
+        }
+        else if(q_new == q_near)
+        {
+            return 1;
+        }
+        else
+        {
+            return 2;
+        }
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+int PathCalculator::Connect(int*& resultTree, int q_rand, int*& auxTree,  bool*& isKnown)
+{
+    int s;
+    do
+    {
+        s = PathCalculator::Extends(resultTree, q_rand, auxTree, isKnown);
+    }while(s == 2);
+    return s;
+}
+
+int PathCalculator::Path(int*& route, int*& Tree, int origin)
+{
+    bool search = true;
+    int save, branch, cut, nodo;
+    while(search)
+    {
+        for(int v=0; v < Tree[maxDim]; v++)
+        {
+            route[v] = 0;
+        }
+        route[0] = Tree[0];
+        save = 1;
+        branch = route[0];
+        for(int v=1; v < Tree[maxDim]; v++)
+        {
+            nodo = Tree[v];
+            if(PathCalculator::Distance(branch, nodo) < 2.4)
+            {
+                route[save] = Tree[v];
+                branch = route[save];
+                save ++;
+                cut = v;                
+            }
+        }
+        if(route[save-1] == origin)
+        {
+            search = false;
+        }
+        else
+            Tree[cut] = 0;
+    }
+    return save-1;
+}
+                                                                            
+void PathCalculator::Change(int*& initialTree, int*& finalTree)
+{
+    int Dim;
+    if(initialTree[maxDim] < finalTree[maxDim])
+        Dim = finalTree[maxDim];
+    else
+        Dim = initialTree[maxDim];
+    int Tree = initialTree[maxDim];
+    initialTree[maxDim] = finalTree[maxDim];
+    finalTree[maxDim] = Tree;
+    for(int c = 0; c <= Dim; c++)
+    {
+        Tree = initialTree[c];
+        initialTree[c] = finalTree[c];
+        finalTree[c] = Tree;
+    }
 }
 
 bool PathCalculator::Line(int startPose, int goalPose, nav_msgs::OccupancyGrid& map, bool*& isKnown)
@@ -1188,12 +1148,6 @@ bool PathCalculator::Line(int startPose, int goalPose, nav_msgs::OccupancyGrid& 
         CX = (int)((x - map.info.origin.position.x)/map.info.resolution);
         CY = (int)((y - map.info.origin.position.y)/map.info.resolution);
         Cell = CY * map.info.width + CX;
-        //std::cout << "Xp->" << movx << " Yp->" << movy  << std::endl;
-        //std::cout << "X->" << x << " Y->" << y  << std::endl;
-
-
-        
-        //std::cout << "Final Celdas->" << Cell<< " ->"<< isKnown[Cell] << std::endl;
     }
 
     /*std::cout << " " << std::endl;

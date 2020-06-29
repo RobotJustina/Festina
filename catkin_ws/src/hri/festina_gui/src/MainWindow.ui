@@ -219,7 +219,12 @@ QRadioButton::indicator{
        </item>
        <item>
         <property name="text">
-         <string>RRT</string>
+         <string>RRT-Ext</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>RRT-Connect</string>
         </property>
        </item>
       </widget>

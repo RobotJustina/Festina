@@ -36,7 +36,7 @@ ENDIF()
 
 find_package(freenect2 REQUIRED)
 find_package(PCL 1.2 REQUIRED)
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 3.4 REQUIRED)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed

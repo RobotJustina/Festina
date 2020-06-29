@@ -27,7 +27,7 @@ float offsetReadSimul = -0.04;
 
 float save[2] = {0,0};
 
-uint16_t info[2] = {3071.0, 0.0};
+uint16_t info[2] = {3071, 0};
 
 void callbackHeadGoalPose(const std_msgs::Float32MultiArray::ConstPtr &msg){
     // std::cout << "head_node.-> Reciving new goal head pose." << std::endl;
