@@ -5,8 +5,8 @@
 * $ roslaunch surge_et_ambula robotino_simul.launch
 
 ## Planning Method:
- A Star
- RRT-Ext
- RRT-Connect
+* A Star
+* RRT-Ext
+* RRT-Connect
 
 
